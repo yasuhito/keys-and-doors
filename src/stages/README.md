@@ -1,5 +1,9 @@
 # ステージデータ
 
+Copyright (c) 2026 Takayuki Kihara
+
+ステージデータ（数式と出題順）は木原貴行（Takayuki Kihara）さんの Proof Dungeon から、MIT ライセンスで利用しています。本作向けにデータ形式と数式の表記を変えています。著作権表示と許諾文の全文は [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) を参照してください。
+
 `index.json` のファイル順、各ファイルの `stages` 順が全体の順序。22層・119ステージ。
 対応する原番号と規則は [対応表](../../docs/stage-map.md) を参照する。
 

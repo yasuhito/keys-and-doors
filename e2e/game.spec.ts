@@ -205,7 +205,24 @@ test("credits open from settings, link to the original and return", async ({
   await page.locator("#settings").click();
   await page.locator("#credits").click();
   await expect(page.locator("h1")).toHaveText("クレジット");
-  await expect(page.locator(".credit-card")).toContainText("木原貴行");
+  const credit = page.locator(".credit-card");
+  await expect(credit).toContainText("木原貴行（Takayuki Kihara）");
+  await expect(credit).toContainText("ステージデータ（数式と出題順）");
+  await expect(credit).toContainText("MIT ライセンスで利用しています");
+  await expect(credit).toContainText(
+    "CC BY-NC-SA 4.0 の対象となる原作の物語や文章は使用していません",
+  );
+  const notices = credit.getByRole("link", { name: "THIRD_PARTY_NOTICES.md" });
+  await expect(notices).toBeVisible();
+  await expect(notices).toHaveAttribute("target", "_blank");
+  const noticeResponse = await page.request.get(
+    (await notices.getAttribute("href"))!,
+  );
+  expect(noticeResponse.ok()).toBe(true);
+  const noticeText = await noticeResponse.text();
+  expect(noticeText).toContain("Copyright (c) 2026 Takayuki Kihara");
+  expect(noticeText).toContain("Permission is hereby granted, free of charge");
+  expect(noticeText).toContain('THE SOFTWARE IS PROVIDED "AS IS"');
   for (const href of [
     "https://github.com/kihara-logic/proof-dungeon",
     "https://x.com/tri_iro/status/2116094777720799282",

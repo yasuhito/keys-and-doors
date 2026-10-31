@@ -1,4 +1,5 @@
 import "./style.css";
+import thirdPartyNoticesUrl from "../THIRD_PARTY_NOTICES.md?url&no-inline";
 import {
   start,
   move,
@@ -147,7 +148,7 @@ function render() {
   if (screen === "credits") {
     const link = (href: string, text: string) =>
       `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    app.innerHTML = `<header>${button("ui-close", "設定に戻る", 'id="close"')}<h1>クレジット</h1></header><div class="settings credits"><section class="credit-card"><p>ステージ構成と問題は、木原貴行さんによる「Proof Dungeon」（${link("https://github.com/kihara-logic/proof-dungeon", "kihara-logic/proof-dungeon")}）に基づいています。</p><p>${link("https://x.com/tri_iro/status/2116094777720799282", "原作の告知")}</p><p>原作のコード・文章・物語・画像はコピーしていません。クレジット表記は${link("https://github.com/kihara-logic/proof-dungeon/blob/main/LICENSE", "原作のライセンス")}に従います。</p></section></div>`;
+    app.innerHTML = `<header>${button("ui-close", "設定に戻る", 'id="close"')}<h1>クレジット</h1></header><div class="settings credits"><section class="credit-card"><p>ステージデータ（数式と出題順）は、木原貴行（Takayuki Kihara）さんの ${link("https://github.com/kihara-logic/proof-dungeon", "Proof Dungeon")} から、MIT ライセンスで利用しています。</p><p>${link("https://x.com/tri_iro/status/2116094777720799282", "原作の告知")}</p><p>本作向けにデータ形式と数式の表記を変えています。著作権表示と許諾文の全文は ${link(thirdPartyNoticesUrl, "THIRD_PARTY_NOTICES.md")} に記載しています。</p><p>CC BY-NC-SA 4.0 の対象となる原作の物語や文章は使用していません。${link("https://github.com/kihara-logic/proof-dungeon/blob/main/LICENSE", "原作のライセンス")}</p></section></div>`;
     app.querySelector<HTMLElement>("#close")!.onclick = () => {
       screen = "settings";
       render();

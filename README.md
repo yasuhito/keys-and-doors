@@ -27,11 +27,11 @@ npm run lint
 
 ## クレジット
 
-ステージ構成と問題は、木原貴行さんによる「Proof Dungeon」（[kihara-logic/proof-dungeon](https://github.com/kihara-logic/proof-dungeon)）に基づいています。原作の告知は[こちら](https://x.com/tri_iro/status/2116094777720799282)です。数式と出題順の出典と対応は[ステージ対応表](docs/stage-map.md)に記録しています。ゲーム内でも、設定画面の「クレジット」から同じ内容を確認できます。
+ステージデータ（数式と出題順）は、木原貴行（Takayuki Kihara）さんの [Proof Dungeon](https://github.com/kihara-logic/proof-dungeon) から、MIT ライセンスで利用しています。[原作の告知](https://x.com/tri_iro/status/2116094777720799282)もご覧ください。
 
-原作のコード・文章・物語・画像は一切コピーしていません。
+対象は `src/stages/` のステージ・数式データと [ステージ対応表](docs/stage-map.md) です。本作向けにデータ形式と数式の表記を変えています。著作権表示と許諾文の全文は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に記載しています。ゲーム内でも、設定画面の「クレジット」から確認できます。
 
-原作は[LICENSE](https://github.com/kihara-logic/proof-dungeon/blob/main/LICENSE)を公開しており、ソフトウェアをMITライセンス、文章をCC BY-NC-SA 4.0で提供しています。このプロジェクトのクレジット表記は原作のライセンスに準拠させ、原作のライセンスが今後変更された場合もそれに従います。
+CC BY-NC-SA 4.0 の対象となる原作の物語や文章は使用していません。原作のライセンスの区分は [LICENSE](https://github.com/kihara-logic/proof-dungeon/blob/main/LICENSE) をご覧ください。
 
 ## License / ライセンス
 

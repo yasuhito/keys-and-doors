@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { start, move, solve } from "../src/core";
 import { stages, unlock } from "./unlock";
+import { activateDoor } from "./controls";
 test("all nine stages through real controls, persistence, replay and locked later layers", async ({
   page,
 }, info) => {
@@ -28,7 +29,7 @@ test("all nine stages through real controls, persistence, replay and locked late
     if (i === 0) {
       // Wrong match stays in the same room, with the key still selected.
       await page.locator('[data-key="1"]').click();
-      await page.locator('.goal [data-drop="L"]').click();
+      await page.locator(".goal").click({ position: { x: 30, y: 90 } });
       await expect(page.locator('[data-key="1"]')).toHaveAttribute(
         "aria-pressed",
         "true",
@@ -42,10 +43,15 @@ test("all nine stages through real controls, persistence, replay and locked late
       });
     }
     for (const action of actions) {
-      if (action.type === "intro") await page.locator(".goal").click();
+      if (
+        (await page.locator(".chip.here").getAttribute("data-room")) !==
+        String(state.current)
+      )
+        await page.locator(`[data-room="${state.current}"]`).click();
+      if (action.type === "intro") await activateDoor(page);
       else if (action.type === "use") {
         await page.locator(`[data-key="${action.key}"]`).click();
-        await page.locator(".goal").click();
+        await activateDoor(page);
       } else if (action.type === "split") {
         await page.locator(`[data-key="${action.key}"]`).click();
         await page.locator(".empty-slot").click();
@@ -82,7 +88,7 @@ test("all nine stages through real controls, persistence, replay and locked late
 test("drag copy, long press, undo and restart", async ({ page }) => {
   await page.goto("./");
   await page.locator('[data-stage="0"]').click();
-  await page.locator(".goal").click();
+  await activateDoor(page);
   const key = page.locator('[data-key="0"]'),
     door = page.locator(".goal");
   const from = (await key.boundingBox())!,
@@ -100,7 +106,7 @@ test("drag copy, long press, undo and restart", async ({ page }) => {
     steps: 8,
   });
   await page.mouse.up();
-  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "0");
   await page.locator("#undo").click();
   await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
   await page.locator("#reset").click();
@@ -132,7 +138,7 @@ test("drag copy, long press, undo and restart", async ({ page }) => {
   await expect(key).toHaveAttribute("aria-pressed", "true");
   await page.locator(".goal").focus();
   await page.keyboard.press("Enter");
-  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "0");
 });
 test("finishing a pair half after opening its sibling via the path lands in an open room", async ({
   page,
@@ -141,14 +147,15 @@ test("finishing a pair half after opening its sibling via the path lands in an o
   page.on("pageerror", (e) => errors.push(e.message));
   await unlock(page, 6);
   await page.locator('[data-stage="6"]').click();
-  await page.locator(".goal").click();
+  await activateDoor(page);
   await page.locator('[data-room="2"]').click();
   await page.locator(".goal").click();
   await page.locator('[data-room="1"]').click();
   await page.locator(".goal").click();
   await page.locator('[data-key="0"]').click();
   await page.locator(".goal").click();
-  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "3");
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "0");
+  await page.locator('[data-room="3"]').click();
   await page.locator("#hint").click();
   await page.locator(".goal").click();
   await page.locator('[data-key="0"]').click();
@@ -161,7 +168,7 @@ test("room reset restores the tray from entry even after visiting another room",
 }) => {
   await unlock(page, 1);
   await page.locator('[data-stage="1"]').click();
-  await page.locator(".goal").click();
+  await activateDoor(page);
   const keys = page.locator("[data-key]");
   await page.locator('[data-key="0"]').click();
   await page.locator(".empty-slot").click();

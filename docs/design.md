@@ -181,7 +181,7 @@ Halos exist on every hole of a door (each atom and each pair, at every depth, ou
 
 ![Exact layout on a 360 px phone](mockups/split-room.svg)
 
-**Status.** This section is specified for implementation. The runtime (`picture()`, `main.ts`), the icons `door-pair.svg` and `rule-and-intro.svg`, and the generated sheets `cards.svg`, `room.svg`, `paths.svg` and `stages.svg` still show the old recessed channel until that work lands. `split.svg` and `split-room.svg` are the reference for the new look.
+**Status.** Implemented in the runtime (`picture()`, `main.ts`, `door-motion.ts`) and the icons `door-pair.svg` and `rule-and-intro.svg`. `decompose` in `src/core.ts` applies ∧I backwards and leaves two independent subgoals; `fill` requires that split, and the parent proof exists only when both children have proofs. A whole pair key still closes an unsplit goal by assumption use, but cannot bypass a split goal. The generated sheets `cards.svg`, `room.svg`, `paths.svg` and `stages.svg` predate this change. `split.svg` and `split-room.svg` are the visual references.
 
 On a goal door, AND is not a hole. The two halves are holes; between them sits a raised brass **joint**, the hinge where the door comes apart. Tapping the joint splits the door into two doors in a row, **door, brass, door**: the left door wants only the left half (for example the sun), the right door only the right half (the moon). Each split door has exactly one hole. When both holes are filled, the pair is made and the room is cleared, which clears the stage if this was the stage's door.
 
@@ -445,7 +445,7 @@ Total: 1460 ms. If key B is already in the tray, the Delivered copy moves to tha
 
 ![Joint, split, fill, clear](mockups/split.svg)
 
-Status: specified for implementation (2.8). The current runtime (`fitMotion()` in `src/motion.ts`) still fills both holes of an unsplit door and drops a bar into the channel.
+Status: implemented (2.8). Pair-door presentation lives in `src/door-motion.ts`, separately from the proof transitions in `src/core.ts`. `fitMotion()` in `src/motion.ts` remains the if-then-key and if-intro presentation.
 
 **Split** (the player releases on the joint, 2.8):
 
@@ -579,7 +579,7 @@ The original Proof Dungeon takes a goal apart one connective at a time: each int
 
 | Goal | Rule | On the door | Simple enough now? | Status |
 | --- | --- | --- | --- | --- |
-| A ∧ B | ∧I: prove A, prove B | Brass joint between the halves. Tap: door, brass, door, one hole each (2.8, 6.3) | Yes. The core already opens one room per half for ∧I (`fill` in `src/core.ts`); only the door, its tap and its motion change | **In this PR** (specified; runtime work follows) |
+| A ∧ B | ∧I: prove A, prove B | Brass joint between the halves. Tap: door, brass, door, one hole each (2.8, 6.3) | Yes. `decompose` in `src/core.ts` opens one room per half for ∧I; `fill` requires this decomposition | **Implemented** |
 | A → B | →I: assume A as a new key, prove B | Already in the game: tap the if-then door, borrow key A (with a ribbon), and the door becomes B (6.6). Later the pocket's arrow could become a brass hinge too, so all intro taps look alike | Already implemented, no change needed | Unchanged |
 | A ∨ B | ∨I: choose which side to prove | A brass **fork** (Y) between the halves instead of a strip (section 13 already reserves the fork for or). Tap: two doors with the fork between them, both lit as choices. Tapping one door chooses it; the other dims to 35% and slides out, and undo brings it back. Then fill the chosen door | No. Needs ∨ in the core and in `picture()` (or keys too), and almost every or stage (layer 3) also needs ∨E, a case split into two rooms, on the key side. ∨I alone makes only stage 3-1 playable. Do ∨I and ∨E together | Proposal |
 | ¬A, that is A → ⊥ | ¬I: assume A, prove ⊥ | The if-then door with the cracked token (section 13) as its grey half: borrow A, the door becomes a cracked-token hole | Small once ⊥ exists, because it is →I. But it needs the ⊥ picture first, and its stages (layer 4) also need ⊥E | Proposal |

@@ -20,15 +20,28 @@ it("keeps an if-then result grey until the whole card is filled", () => {
   expect(fitted).toContain("#2F6FD0");
   expect(fitted).toContain('stroke="#B07A1A"');
 });
-it("locks the pair bar only after both holes are seated", () => {
+it("keeps a raised joint on a goal and seats the pair bar only once both halves are filled", () => {
   const pair = parse("P ∧ Q");
   const partial = picture(pair, 184, 137, true, ["L"]);
   expect(partial).toContain("#E0631F");
   expect(partial).not.toContain("#2F6FD0");
-  expect(partial).not.toContain('fill="#D9A441"');
+  expect(partial).toContain('class="joint" data-path=""');
+  expect(partial).not.toContain('class="bridge"');
+  expect(partial).toContain('fill="#D9A441"');
   const locked = picture(pair, 184, 137, true, ["L", "R"]);
   expect(locked).toContain("#2F6FD0");
   expect(locked).toContain('fill="#D9A441"');
+});
+it("uses joints recursively on doors, but recessed channels inside keys and pockets", () => {
+  expect(picture(parse("(P ∧ Q) ∧ R"), 184, 137, true)).toContain(
+    'class="joint" data-path="L"',
+  );
+  const key = picture(parse("(P ∧ Q) → R"), 184, 137);
+  expect(key).not.toContain('class="joint"');
+  expect(key).toContain('class="bridge"');
+  const pocket = picture(parse("(P ∧ Q) → R"), 184, 137, true);
+  expect(pocket).not.toContain('class="joint"');
+  expect(pocket).toContain('class="bridge"');
 });
 it("fills nested if-then results recursively", () => {
   const fitted = picture(parse("P → (Q → R)"), 184, 137, false, [""]);

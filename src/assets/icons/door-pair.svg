@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <title>Pair door (an and-goal: two holes joined by a channel, fill both)</title>
+  <title>Pair door: tap the brass joint, then fill both doors</title>
   <path d="M5 45V20a19 17 0 0 1 38 0v25Z" fill="#5E3B27"/>
   <path d="M9 45V20.5a15 13 0 0 1 30 0V45Z" fill="#8C5A3C"/>
   <rect x="11.5" y="19" width="25" height="15" rx="2.5" fill="#F7F1E6" stroke="#5E3B27" stroke-width="1.2"/>
-  <rect x="17.5" y="25.6" width="13" height="3" rx="1.5" fill="#FFFFFF"/>
-  <rect x="17.5" y="24.8" width="13" height="3" rx="1.5" fill="#2E261F"/>
+  <rect x="22.5" y="21.5" width="3" height="12" rx="1.5" fill="#9C7024"/>
+  <rect x="22.5" y="21" width="3" height="12" rx="1.5" fill="#D9A441" stroke="#9C7024" stroke-width=".5"/>
+  <path d="M23 24h2M23 27h2M23 30h2" stroke="#9C7024" stroke-width=".5"/>
   <circle cx="17.5" cy="27.2" r="3.6" fill="#FFFFFF"/>
   <circle cx="17.5" cy="26.4" r="3.6" fill="#2E261F"/>
   <circle cx="17.5" cy="27.1" r="2.8" fill="#5E5143"/>

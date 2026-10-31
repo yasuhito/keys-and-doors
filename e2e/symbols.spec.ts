@@ -131,11 +131,11 @@ for (const reducedMotion of ["reduce", "no-preference"] as const) {
     await page.goto("./");
     await page.locator('[data-stage="2"]').click();
     await page.locator(".goal").click();
-    await page.locator(".goal").click();
+    await page.locator(".joint-button").click();
     await page.locator('[data-key="1"]').click();
-    await page.locator(".goal").click();
+    await page.locator('.goal[data-drop="L"]').click();
     await page.locator('[data-key="0"]').click();
-    await page.locator(".goal").click();
+    await page.locator('.goal[data-drop="R"]').click();
     if (reducedMotion === "no-preference") {
       await expect(
         page.locator('.door-fit .arrow[stroke="#B07A1A"]'),

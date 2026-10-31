@@ -12,6 +12,11 @@ import {
 import one from "./stages/layer-01.json";
 import two from "./stages/layer-02.json";
 
+function decomposed(state: ReturnType<typeof start>) {
+  return state.rooms[state.current].children.length
+    ? state
+    : move(state, { type: "decompose" });
+}
 describe("formula grammar", () => {
   it("respects precedence and right associativity", () => {
     expect(format(parse("P ∧ Q → R → S"))).toBe("((P ∧ Q) → (R → S))");
@@ -21,12 +26,32 @@ describe("formula grammar", () => {
   );
 });
 describe("direct pair filling", () => {
+  it("requires a committed decomposition and cannot clear a split goal with a whole key", () => {
+    const initial = start("P ∧ Q", ["P", "Q", "P ∧ Q"]);
+    expect(() => move(initial, { type: "fill", key: 0, side: "L" })).toThrow(
+      "split the door first",
+    );
+    const split = move(initial, { type: "decompose" });
+    expect(split.current).toBe(0);
+    expect(split.rooms[0].mode).toBe("∧I");
+    expect(split.rooms[0].proof).toBeUndefined();
+    expect(split.rooms.slice(1).map((r) => format(r.goal))).toEqual(["P", "Q"]);
+    expect(() => move(split, { type: "use", key: 2 })).toThrow();
+    expect(() => move(split, { type: "decompose" })).toThrow();
+    expect(() => move(start("P → P", []), { type: "decompose" })).toThrow();
+    expect(
+      checkProof(
+        move(initial, { type: "use", key: 2 }).rooms[0].proof!,
+        initial.initial,
+      ),
+    ).toBe(true);
+  });
   it.each(["L", "R"] as const)(
     "fills %s first without leaving the pair and checks its proof",
     (side) => {
       const initial = start("P ∧ Q", ["P", "Q"]);
       const snapshot = structuredClone(initial);
-      const first = move(initial, {
+      const first = move(decomposed(initial), {
         type: "fill",
         key: side === "L" ? 0 : 1,
         side,
@@ -36,7 +61,7 @@ describe("direct pair filling", () => {
       expect(first.rooms[0].proof).toBeUndefined();
       expect(first.rooms[0].children).toHaveLength(2);
       expect(first.rooms[side === "L" ? 1 : 2].proof?.rule).toBe("assume");
-      const last = move(first, {
+      const last = move(decomposed(first), {
         type: "fill",
         key: side === "L" ? 1 : 0,
         side: side === "L" ? "R" : "L",
@@ -48,17 +73,25 @@ describe("direct pair filling", () => {
   );
   it("rejects the wrong or occupied half, including equal-shaped holes", () => {
     const s = start("P ∧ Q", ["P"]);
-    expect(() => move(s, { type: "fill", key: 0, side: "R" })).toThrow();
+    expect(() =>
+      move(decomposed(s), { type: "fill", key: 0, side: "R" }),
+    ).toThrow();
     expect(() =>
       move(start("P", ["P"]), { type: "fill", key: 0, side: "L" }),
     ).toThrow();
-    let n = move(start("P ∧ P", ["P"]), { type: "fill", key: 0, side: "R" });
-    expect(() => move(n, { type: "fill", key: 0, side: "R" })).toThrow();
-    n = move(n, { type: "fill", key: 0, side: "L" });
+    let n = move(decomposed(start("P ∧ P", ["P"])), {
+      type: "fill",
+      key: 0,
+      side: "R",
+    });
+    expect(() =>
+      move(decomposed(n), { type: "fill", key: 0, side: "R" }),
+    ).toThrow();
+    n = move(decomposed(n), { type: "fill", key: 0, side: "L" });
     expect(checkProof(n.rooms[0].proof!, n.initial)).toBe(true);
   });
   it("allows an unfinished pair to be revisited and its other half entered without new rooms", () => {
-    let s = move(start("P ∧ Q", ["P", "Q"]), {
+    let s = move(decomposed(start("P ∧ Q", ["P", "Q"])), {
       type: "fill",
       key: 0,
       side: "L",
@@ -71,7 +104,7 @@ describe("direct pair filling", () => {
     s = move(s, { type: "use", key: 1 });
     expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
   });
-  it("can fill an expanded half as a whole without reopening its abandoned descendants", () => {
+  it("cannot bypass a decomposed half with a whole key", () => {
     let s = move(start("(P ∧ Q) ∧ R", ["P ∧ Q", "R"]), {
       type: "intro",
       side: "L",
@@ -79,35 +112,35 @@ describe("direct pair filling", () => {
     s = move(s, { type: "intro" });
     const abandoned = s.current;
     s = move(s, { type: "visit", room: 0 });
-    s = move(s, { type: "fill", key: 0, side: "L" });
-    expect(() => move(s, { type: "visit", room: abandoned })).toThrow();
-    s = move(s, { type: "fill", key: 1, side: "R" });
+    expect(() => move(s, { type: "fill", key: 0, side: "L" })).toThrow();
+    s = move(s, { type: "visit", room: abandoned });
+    for (const action of solve(s)!) s = move(s, action);
     expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
   });
   it("accepts compound halves and discharges borrowed keys without leakage", () => {
     let s = move(start("P → ((P ∧ Q) ∧ P)", ["P ∧ Q"]), { type: "intro" });
     const ribbon = s.rooms[1].keys[1].ribbons;
-    s = move(s, { type: "fill", key: 1, side: "R" });
+    s = move(decomposed(s), { type: "fill", key: 1, side: "R" });
     expect(s.current).toBe(1);
     expect(s.rooms[1].keys[1].ribbons).toEqual(ribbon);
-    s = move(s, { type: "fill", key: 0, side: "L" });
+    s = move(decomposed(s), { type: "fill", key: 0, side: "L" });
     expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
     expect(s.rooms[0].keys).toHaveLength(1);
   });
   it("room reset undoes direct fills even when the tray is unchanged", () => {
     const entry = start("P ∧ Q", ["P", "Q"]);
-    const s = move(entry, { type: "fill", key: 0, side: "L" });
+    const s = move(decomposed(entry), { type: "fill", key: 0, side: "L" });
     const reset = move(s, { type: "reset" });
     expect(reset).toEqual(entry);
     expect(() => move(reset, { type: "reset" })).toThrow();
-    let n = move(reset, { type: "fill", key: 1, side: "R" });
-    n = move(n, { type: "fill", key: 0, side: "L" });
+    let n = move(decomposed(reset), { type: "fill", key: 1, side: "R" });
+    n = move(decomposed(n), { type: "fill", key: 0, side: "L" });
     expect(checkProof(n.rooms[0].proof!, n.initial)).toBe(true);
   });
   it("room reset restores the entry tray and drops halves filled from derived keys", () => {
     const entry = start("R ∧ P", ["P ∧ R"]);
     let s = move(entry, { type: "split", key: 0 });
-    s = move(s, { type: "fill", key: 2, side: "L" });
+    s = move(decomposed(s), { type: "fill", key: 2, side: "L" });
     expect(move(s, { type: "reset" })).toEqual(entry);
   });
   it("room reset keeps progress made inside a half and its sibling's scope", () => {
@@ -117,7 +150,7 @@ describe("direct pair filling", () => {
     });
     s = move(s, { type: "split", key: 0 });
     s = move(s, { type: "visit", room: 0 });
-    s = move(s, { type: "fill", key: 1, side: "R" });
+    s = move(decomposed(s), { type: "fill", key: 1, side: "R" });
     const reset = move(s, { type: "reset" });
     expect(reset.rooms).toHaveLength(3);
     expect(reset.rooms[2].proof).toBeUndefined();
@@ -128,7 +161,7 @@ describe("direct pair filling", () => {
     n = move(n, { type: "use", key: 1 });
     expect(checkProof(n.rooms[0].proof!, n.initial)).toBe(true);
   });
-  it("room reset reopens an expanded half that was filled as a whole", () => {
+  it("room reset preserves an expanded half while reverting direct fills", () => {
     let s = move(start("(P ∧ Q) ∧ R", ["P ∧ Q", "R"]), {
       type: "intro",
       side: "L",
@@ -136,7 +169,7 @@ describe("direct pair filling", () => {
     s = move(s, { type: "intro" });
     const inner = s.current;
     s = move(s, { type: "visit", room: 0 });
-    s = move(s, { type: "fill", key: 0, side: "L" });
+    s = move(decomposed(s), { type: "fill", key: 1, side: "R" });
     s = move(s, { type: "reset" });
     expect(s.rooms[1].proof).toBeUndefined();
     s = move(s, { type: "visit", room: inner });

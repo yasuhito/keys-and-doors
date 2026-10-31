@@ -295,13 +295,139 @@ footer button,
   background: radial-gradient(ellipse, #d9a44110, transparent 65%);
   pointer-events: none;
 }
-.goal {
+.goal,
+.transition-goal {
   padding: 8px;
   border-radius: 100px 100px 12px 12px;
   transition: transform 0.2s;
 }
 .goal:active {
   transform: scale(1.02);
+}
+.goal-frame {
+  position: relative;
+}
+.split-chip {
+  display: flex;
+  align-items: center;
+  width: 70px;
+}
+.split-chip .picture {
+  width: 30px;
+}
+.split-chip i {
+  width: 6px;
+  height: 22px;
+  border-radius: 3px;
+  background: #d9a441;
+  flex: none;
+}
+.joint-button {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  z-index: 2;
+}
+.joint-button:focus-visible,
+.joint-button.pressed {
+  outline: 2px solid #ffe7a8;
+  outline-offset: -8px;
+}
+.joint-face {
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.goal-frame:has(.pressed) .joint-face {
+  transform: translateY(1.5px);
+  transition-duration: 80ms;
+}
+.joint-button.joint-hint {
+  outline: 2px solid #ffe7a8;
+  outline-offset: -8px;
+  animation: glow 1.2s ease-in-out infinite;
+}
+.door-area:has(.split-doors) {
+  padding-inline: 4px;
+}
+.split-doors .seat-flight {
+  pointer-events: none;
+}
+.split-doors .picture {
+  overflow: visible;
+}
+.split-doors {
+  display: grid;
+  grid-template-columns: minmax(0, 146px) 36px minmax(0, 146px);
+  align-items: center;
+  width: min(328px, 100%);
+}
+.split-doors .goal,
+.split-doors .transition-goal {
+  padding: 0;
+  width: 100%;
+}
+.split-doors .object.door {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 146 / 162;
+  padding: 36px 13px 30px;
+  border-radius: 73px 73px 9px 9px;
+}
+.split-doors .picture {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 100 / 76;
+}
+.split-doors .coupler {
+  width: 36px;
+  height: 76px;
+  margin-top: 6px;
+  overflow: visible;
+}
+.coupler .tab,
+.coupler-face {
+  fill: #d9a441;
+  stroke: #9c7024;
+}
+.coupler .tab.lit,
+.coupler.lit .coupler-face {
+  fill: #ffe7a8;
+}
+.door-transition {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  pointer-events: none;
+  z-index: 3;
+}
+.open-pair .goal-frame {
+  background: #ffe7a8;
+  border-radius: 73px 73px 9px 9px;
+}
+.open-pair .object.door {
+  transform-origin: left center;
+}
+.joint-button.hint {
+  outline: 2px solid #ffe7a8;
+  outline-offset: -8px;
+}
+.reduced .goal:active {
+  transform: none;
+}
+.reduced .joint-button.joint-hint {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .goal:active {
+    transform: none;
+  }
+  .joint-button.joint-hint {
+    animation: none;
+  }
 }
 .tray {
   background: #262b42;

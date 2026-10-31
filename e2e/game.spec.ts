@@ -16,14 +16,20 @@ async function unlock(page: Page, count: number) {
     if (!localStorage.getItem("keys-and-doors:v1"))
       localStorage.setItem("keys-and-doors:v1", value);
   }, JSON.stringify({ proofs }));
-  await page.goto("/");
+  await page.goto("./");
 }
 test("all nine stages through real controls, persistence, replay and locked later layers", async ({
   page,
 }, info) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  page.on("requestfailed", (request) => errors.push(request.url()));
+  page.on("response", (response) => {
+    if (response.status() >= 400)
+      errors.push(`${response.status()} ${response.url()}`);
+  });
+  await page.goto("./");
+  await expect(page).toHaveURL(/\/keys-and-doors\/$/);
   await expect(page.locator('[data-stage="0"]')).toBeEnabled();
   await expect(page.locator('[data-stage="1"]')).toBeDisabled();
   await mkdir("/tmp/kd/shots", { recursive: true });
@@ -90,7 +96,7 @@ test("all nine stages through real controls, persistence, replay and locked late
   expect(errors).toEqual([]);
 });
 test("drag copy, long press, undo and restart", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.locator('[data-stage="0"]').click();
   await page.locator(".goal").click();
   const key = page.locator('[data-key="0"]'),
@@ -201,7 +207,7 @@ test("room reset restores the tray from entry even after visiting another room",
 test("credits open from settings, link to the original and return", async ({
   page,
 }, info) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.locator("#settings").click();
   await page.locator("#credits").click();
   await expect(page.locator("h1")).toHaveText("クレジット");

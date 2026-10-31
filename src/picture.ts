@@ -272,7 +272,7 @@ export function picture(
       (door && part.kind === "pair"
         ? halos(part.parts[0], at + "L") + halos(part.parts[1], at + "R")
         : "");
-    const cut = (part: Layout): string => {
+    const cut = (part: Layout, at: string): string => {
       const into = (c: string) => outline(part, 0, () => [c, c], 1);
       switch (part.kind) {
         case "fold":
@@ -281,13 +281,13 @@ export function picture(
           return recess(into, depthOf(part), p.hole);
         case "pair": {
           const t = Math.min(part.bar.w, part.bar.h);
-          return `<g class="bridge">${recess((c) => rect(part.bar, t / 2, c, c), clamp(1, t * 0.2, 2.5), p.hole)}</g>${cut(part.parts[0])}${cut(part.parts[1])}`;
+          return `<g class="bridge">${recess((c) => rect(part.bar, t / 2, c, c), clamp(1, t * 0.2, 2.5), p.hole)}</g><g class="cut" data-path="${at}L">${cut(part.parts[0], at + "L")}</g><g class="cut" data-path="${at}R">${cut(part.parts[1], at + "R")}</g>`;
         }
         case "imp":
           return `${recess(into, depthOf(part), p.pocket)}<g class="imprint"${door ? "" : ' opacity="0.6"'}>${face(part, p, "~", false, false)}</g>`;
       }
     };
-    return `<g class="cut" data-path="${path}">${glow && !full ? halos(l, path) : ""}${cut(l)}${seated(l, path, full)}</g>`;
+    return `<g class="cut" data-path="${path}">${glow && !full ? halos(l, path) : ""}${cut(l, path)}${seated(l, path, full)}</g>`;
   }
   // A key seated in its hole sits flush: full size and no thickness, so the lip still
   // shows below it. A pair's bar seats only once both halves have.

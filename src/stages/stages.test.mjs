@@ -82,6 +82,10 @@ test('Japanese map has one ordered row per stage with all formulas', async () =>
       }
     }
     for (const formula of stage.lemmas ?? []) assert.ok(rows[i].includes(`\`${formula}\``));
-    assert.equal(rows[i].split('|').length, 8);
+    const cells = rows[i].split('|');
+    assert.equal(cells.length, 8);
+    const formulas = (cell) => [...cell.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
+    assert.deepEqual(formulas(cells[4]), stage.tasks.map((task) => task.goal), `${stage.id}: goal order`);
+    assert.deepEqual(formulas(cells[5]), [...stage.tasks.flatMap((task) => task.assumptions), ...(stage.lemmas ?? [])], `${stage.id}: assumption and lemma order`);
   });
 });

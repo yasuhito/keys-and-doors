@@ -1,0 +1,21 @@
+{
+  "name": "keys-and-doors",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "test": "vitest run && node --test src/stages/stages.test.mjs",
+    "build": "tsc --noEmit && vite build",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src/*.ts src/*.css e2e/*.ts vite.config.ts playwright.config.ts index.html package.json tsconfig.json .github/workflows/*.yml README.md",
+    "lint": "prettier --check src/*.ts src/*.css e2e/*.ts vite.config.ts playwright.config.ts index.html package.json tsconfig.json .github/workflows/*.yml README.md"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^5.0.5"
+  }
+}

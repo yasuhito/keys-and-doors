@@ -112,6 +112,7 @@ export type Room = {
 export type State = { rooms: Room[]; current: number; initial: Formula[] };
 export type Action =
   | { type: "intro"; side?: "L" | "R" }
+  | { type: "decompose"; path?: ("L" | "R")[] }
   | { type: "reset" }
   | { type: "use" | "split" | "lemma"; key: number }
   | { type: "apply"; key: number; target: number }
@@ -227,21 +228,13 @@ export function move(state: State, action: Action): State {
         parent.mode === "→I" ? s.rooms[parent.children[0]].ribbon : undefined,
     });
   };
-  if (action.type === "intro") {
-    const f = r.goal;
-    if (r.children.length) {
-      const child = action.side
-        ? r.children[action.side === "L" ? 0 : 1]
-        : r.children.find((c) => !s.rooms[c].proof);
-      if (child === undefined || s.rooms[child].proof)
-        throw Error("closed half");
-      s.current = child;
-      return s;
-    }
+  const open = (index: number) => {
+    const room = s.rooms[index];
+    const f = room.goal;
     if (typeof f === "string") throw Error("atomic door");
-    r.mode = f.op === "∧" ? "∧I" : "→I";
+    room.mode = f.op === "∧" ? "∧I" : "→I";
     for (const goal of f.op === "∧" ? [f.left, f.right] : [f.right]) {
-      const child = openRoom(goal, r.keys, s.current);
+      const child = openRoom(goal, room.keys, index);
       if (f.op === "→") {
         child.ribbon = s.rooms.length;
         add(child, {
@@ -255,10 +248,41 @@ export function move(state: State, action: Action): State {
         });
         child.entry = structuredClone(child.keys);
       }
-      r.children.push(s.rooms.length);
+      room.children.push(s.rooms.length);
       s.rooms.push(child);
     }
-    s.current = r.children[action.side === "R" && f.op === "∧" ? 1 : 0];
+  };
+  if (action.type === "decompose") {
+    const path = action.path ?? [];
+    let index = s.current;
+    for (let i = 0; ; i++) {
+      const room = s.rooms[index];
+      if (!room.children.length) {
+        if (typeof room.goal === "string" || room.goal.op !== "∧")
+          throw Error("not an unsplit pair");
+        open(index);
+      } else if (room.mode !== "∧I" || !path.length)
+        throw Error("not an unsplit pair");
+      if (i === path.length) break;
+      index = room.children[path[i] === "L" ? 0 : 1];
+      if (s.rooms[index].proof) throw Error("closed half");
+    }
+    s.current = index;
+    return s;
+  }
+  if (action.type === "intro") {
+    const side = action.side;
+    if (r.children.length) {
+      const child = side
+        ? r.children[side === "L" ? 0 : 1]
+        : r.children.find((c) => !s.rooms[c].proof);
+      if (child === undefined || s.rooms[child].proof)
+        throw Error("closed half");
+      s.current = child;
+      return s;
+    }
+    open(s.current);
+    s.current = r.children[side === "R" && r.mode === "∧I" ? 1 : 0];
     return s;
   }
   const key = r.keys[action.key];
@@ -270,20 +294,18 @@ export function move(state: State, action: Action): State {
       throw Error("not pair door");
     if (!equal(f, action.side === "L" ? goal.left : goal.right))
       throw Error("mismatch");
-    if (!r.children.length) {
-      r.mode = "∧I";
-      for (const half of [goal.left, goal.right]) {
-        r.children.push(s.rooms.length);
-        s.rooms.push(openRoom(half, r.keys, s.current));
-      }
-    }
+    if (r.mode !== "∧I" || r.children.length !== 2)
+      throw Error("split the door first");
     const child = r.children[action.side === "L" ? 0 : 1];
     if (s.rooms[child].proof) throw Error("closed half");
+    if (s.rooms[child].children.length)
+      throw Error("split half requires its own proof");
     finish(child, key.proof);
     s.rooms[child].filled = true;
     if (!r.proof) s.current = state.current;
   }
   if (action.type === "use") {
+    if (r.children.length) throw Error("split door requires both halves");
     if (!equal(f, r.goal)) throw Error("mismatch");
     finish(s.current, key.proof);
   }
@@ -330,12 +352,13 @@ export function solve(state: State, budget = 150): Action[] | null {
     if (s.rooms[0].proof) return [];
     if (left <= 0) return null;
     const r = s.rooms[s.current];
-    const signature = `${format(r.goal)}:${r.keys.map((k) => format(k.proof.formula)).join(";")}`;
+    const signature = `${s.current}:${r.children.map((c) => !!s.rooms[c].proof).join(",")}:${format(r.goal)}:${r.keys.map((k) => format(k.proof.formula)).join(";")}`;
     if (seen.has(signature)) return null;
     const nextSeen = new Set(seen).add(signature);
     const actions: Action[] = [];
     r.keys.forEach((k, key) => {
-      if (equal(k.proof.formula, r.goal)) actions.push({ type: "use", key });
+      if (!r.children.length && equal(k.proof.formula, r.goal))
+        actions.push({ type: "use", key });
     });
     r.keys.forEach((k, key) => {
       const f = k.proof.formula;

@@ -16,6 +16,7 @@ import {
 import { card, escape, icon, picture, spoken } from "./picture";
 import { load, save } from "./progress";
 import { fitMotion } from "./motion";
+import { doorMotion, joinDoors } from "./door-motion";
 import first from "./stages/layer-01.json";
 import second from "./stages/layer-02.json";
 const layers = Object.values(
@@ -58,6 +59,7 @@ function enter(i: number) {
   hint(true);
 }
 let finishMotion: (() => void) | undefined;
+let jointObserver: ResizeObserver | undefined;
 let dropSource: DOMRect | undefined;
 let dropShape: DOMRect | undefined;
 function shapeBox(object: Element | null): DOMRect | undefined {
@@ -76,6 +78,30 @@ function shapeBox(object: Element | null): DOMRect | undefined {
 }
 let retargeted: { x: number; y: number; target: Element } | undefined;
 let suppressNativeClick = false;
+function undoLast() {
+  const room = state.rooms[state.current];
+  const before = app
+    .querySelector<HTMLElement>(".door-area")
+    ?.cloneNode(true) as HTMLElement | undefined;
+  state = history.pop()!;
+  selected = undefined;
+  screen = "room";
+  render();
+  if (
+    room.mode === "∧I" &&
+    state.rooms[state.current].mode !== "∧I" &&
+    before
+  ) {
+    finishMotion = joinDoors(
+      app.querySelector<HTMLElement>(".door-area")!,
+      before,
+      reduced(),
+      () => {
+        finishMotion = undefined;
+      },
+    );
+  }
+}
 function endMotion() {
   while (finishMotion) {
     const finish = finishMotion;
@@ -94,12 +120,14 @@ document.addEventListener(
     if (!finishMotion) return;
     const target = event.target as Element;
     const undo = !!target.closest("#undo") && history.length > 0;
+    const joint = target.closest<HTMLElement>(".joint-button");
+    const jointDrop = joint
+      ?.closest(".goal-frame")
+      ?.querySelector<HTMLElement>(".goal")?.dataset.drop;
+    const jointPath = joint?.dataset.path;
     endMotion();
     if (undo) {
-      state = history.pop()!;
-      selected = undefined;
-      screen = "room";
-      render();
+      undoLast();
       event.stopImmediatePropagation();
       event.preventDefault();
       suppressNativeClick = true;
@@ -107,7 +135,12 @@ document.addEventListener(
     }
     if (!target.isConnected) {
       event.stopImmediatePropagation();
-      const next = document.elementFromPoint(event.clientX, event.clientY);
+      const next =
+        joint && jointDrop !== undefined
+          ? app.querySelector(
+              `.goal-frame:has(.goal[data-drop="${jointDrop}"]) .joint-button[data-path="${jointPath ?? ""}"]`,
+            )
+          : document.elementFromPoint(event.clientX, event.clientY);
       if (next) {
         retargeted = { x: event.clientX, y: event.clientY, target: next };
         next.dispatchEvent(new PointerEvent("pointerdown", event));
@@ -145,10 +178,7 @@ document.addEventListener(
         !!(event.target as Element).closest("#undo") && history.length > 0;
       endMotion();
       if (undo) {
-        state = history.pop()!;
-        selected = undefined;
-        screen = "room";
-        render();
+        undoLast();
         event.stopImmediatePropagation();
         event.preventDefault();
       }
@@ -177,6 +207,9 @@ function commit(action: Action) {
     dropSource = dropShape = undefined;
     const rootGoal = state.rooms[0].goal;
     const doorBox = app.querySelector(".goal .object")?.getBoundingClientRect();
+    const oldDoor = app
+      .querySelector<HTMLElement>(".door-area")
+      ?.cloneNode(true) as HTMLElement | undefined;
     history.push(state);
     state = next;
     selected = undefined;
@@ -197,16 +230,64 @@ function commit(action: Action) {
         showReplay(state.rooms[0].proof);
       } else render();
     };
-    if (action.type === "fill" || action.type === "apply") {
-      const pair = action.type === "fill";
-      const formula = pair ? room.goal : room.keys[action.target].proof.formula;
-      const last = pair && !!next.rooms[previous.current].proof;
-      if (!last) render();
+    let pairRoom = action.type === "fill" ? previous.current : undefined;
+    if (action.type === "fill" || action.type === "use") {
+      for (
+        let child = previous.current, parent = room.parent;
+        parent !== undefined;
+        child = parent, parent = previous.rooms[parent].parent
+      ) {
+        if (
+          previous.rooms[parent].mode === "∧I" &&
+          next.rooms[child].proof &&
+          !previous.rooms[child].proof
+        )
+          pairRoom = parent;
+      }
+    }
+    if (action.type === "decompose" || pairRoom !== undefined) {
+      // Proof state is committed before presentation. Split rooms remain the
+      // authority for seated halves and completion, never an animation callback.
+      if (pairRoom !== undefined) state.current = pairRoom;
+      render();
+      buzz(25);
+      const area = app.querySelector<HTMLElement>(".door-area")!;
+      const changed =
+        pairRoom === undefined
+          ? -1
+          : previous.rooms[pairRoom].children.findIndex(
+              (c) => next.rooms[c].proof && !previous.rooms[c].proof,
+            );
+      const side = changed < 0 ? undefined : changed === 0 ? "L" : "R";
+      const direct =
+        action.type === "fill"
+          ? pairRoom === previous.current
+          : pairRoom === room.parent;
+      finishMotion = doorMotion(
+        area,
+        oldDoor,
+        action.type === "decompose",
+        !!state.rooms[state.current].proof,
+        reduced(),
+        () => completion(true),
+        side
+          ? {
+              side,
+              source: direct ? (sourceShape ?? source) : undefined,
+              lifted,
+            }
+          : undefined,
+      );
+      return;
+    }
+    if (action.type === "apply") {
+      const formula = room.keys[action.target].proof.formula;
+      render();
       const object = app.querySelector<HTMLElement>(
-        pair ? ".goal .object" : `[data-key="${action.target}"] .object`,
+        `[data-key="${action.target}"] .object`,
       )!;
       const resultIndex =
-        !pair && typeof formula !== "string"
+        typeof formula !== "string"
           ? state.rooms[state.current].keys.findIndex((k) =>
               equal(k.proof.formula, formula.right),
             )
@@ -214,11 +295,9 @@ function commit(action: Action) {
       finishMotion = fitMotion({
         object,
         formula,
-        goal: pair,
-        before: pair ? filled(room, previous) : [],
-        path: pair ? action.side : "S",
-        pair,
-        last,
+        goal: false,
+        before: [],
+        path: "S",
         source,
         sourceShape,
         lifted,
@@ -233,47 +312,13 @@ function commit(action: Action) {
         buzz,
         done: () => {
           finishMotion = undefined;
-          if (last) completion(true);
-        },
-      });
-      return;
-    }
-    const parent =
-      room.parent === undefined ? undefined : previous.rooms[room.parent];
-    if (action.type === "use" && parent?.mode === "∧I" && doorBox) {
-      const side = parent.children.indexOf(previous.current) === 0 ? "L" : "R";
-      const door = document.createElement("span");
-      door.className = "door-fit";
-      door.style.left = `${doorBox.x}px`;
-      door.style.top = `${doorBox.y}px`;
-      door.innerHTML = card(
-        parent.goal,
-        "door",
-        true,
-        filled(parent, previous),
-      );
-      app.append(door);
-      finishMotion = fitMotion({
-        object: door.querySelector<HTMLElement>(".object")!,
-        formula: parent.goal,
-        goal: true,
-        before: filled(parent, previous),
-        path: side,
-        pair: true,
-        last: !!next.rooms[room.parent!].proof,
-        returning: true,
-        reduced: reduced(),
-        buzz,
-        done: () => {
-          door.remove();
-          finishMotion = undefined;
-          completion(true);
         },
       });
       return;
     }
     completion();
     function completion(fitted = false) {
+      finishMotion = undefined;
       if (state.rooms[0].proof) {
         if (doorBox && typeof rootGoal !== "string" && rootGoal.op === "→") {
           const door = document.createElement("span");
@@ -328,6 +373,7 @@ function ghosts(forms: Formula[] | undefined) {
     : "";
 }
 function render() {
+  jointObserver?.disconnect();
   clearInterval(replayTimer);
   app.className = `${progress.captions ? "captions" : ""} ${progress.left ? "left-handed" : ""} ${reduced() ? "reduced" : ""}`;
   if (screen === "map") {
@@ -390,6 +436,24 @@ function render() {
     };
   }
 }
+function goalDoors(valid: boolean) {
+  const r = state.rooms[state.current];
+  const frame = (goal: Formula, paths: string[], drop: string, done = false) =>
+    `<div class="goal-frame"><button class="goal ${valid && drop === "door" ? "valid" : ""} ${done ? "half-filled" : ""}" data-drop="${drop}" data-formula="${escape(format(goal))}" aria-label="扉: ${escape(spoken(goal))}" ${done ? "disabled" : ""}>${card(goal, "door", true, paths)}${drop === "door" ? doorPreview() : ""}</button></div>`;
+  if (r.mode !== "∧I") return frame(r.goal, filled(r), "door");
+  const halves = r.children.map((c, i) =>
+    frame(
+      state.rooms[c].goal,
+      filled(state.rooms[c]),
+      i ? "R" : "L",
+      !!state.rooms[c].proof,
+    ),
+  );
+  const paths = r.children.flatMap((c, i) =>
+    state.rooms[c].proof ? [i ? "R" : "L"] : [],
+  );
+  return `<div class="split-doors">${halves[0]}<svg class="coupler ${paths.length === 2 ? "lit" : ""}" viewBox="0 0 36 76" aria-hidden="true"><rect class="tab ${paths.includes("L") ? "lit" : ""}" data-side="L" x="0" y="33" width="12" height="10" rx="2"/><rect class="tab ${paths.includes("R") ? "lit" : ""}" data-side="R" x="24" y="33" width="12" height="10" rx="2"/><rect x="11" y="8" width="14" height="64" rx="7" fill="#9C7024"/><rect class="coupler-face" x="11" y="6" width="14" height="64" rx="7"/><path d="M13 22H23M13 38H23M13 54H23" stroke="#9C7024"/></svg>${halves[1]}</div>`;
+}
 function renderRoom() {
   const r = state.rooms[state.current];
   const usePreview =
@@ -398,7 +462,7 @@ function renderRoom() {
     selected === undefined
       ? undefined
       : preview({ type: "split", key: selected });
-  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${visitable(state, i) ? "" : "disabled"}>${card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door", true, filled(r))}${doorPreview()}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
+  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${visitable(state, i) ? "" : "disabled"}>${room.mode === "∧I" ? `<span class="split-chip">${room.children.map((c) => picture(state.rooms[c].goal, 60, 60, true, filled(state.rooms[c]))).join("<i></i>")}</span>` : card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div>${goalDoors(usePreview !== undefined)}</div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
     .map((k, i) => {
       const forms =
         selected === undefined
@@ -409,19 +473,23 @@ function renderRoom() {
     .join(
       "",
     )}<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: つながった鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button></div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
-  if (typeof r.goal !== "string" && r.goal.op === "∧") {
+  if (r.mode === "∧I") {
     for (const side of ["L", "R"] as const) {
-      const tile = app.querySelector<SVGElement>(
-        `.goal > .object > .picture > .cut > .cut[data-path="${side}"]`,
-      )!;
+      const tile = app.querySelector<HTMLElement>(`[data-drop="${side}"]`)!;
       tile.dataset.drop = side;
-      if (selected !== undefined && preview(doorAction(selected, side)))
+      if (selected !== undefined && preview(doorAction(selected, side))) {
         tile.classList.add("valid");
+        const half = state.rooms[r.children[side === "L" ? 0 : 1]];
+        tile.insertAdjacentHTML(
+          "beforeend",
+          `<span class="door-preview">${picture(half.goal, 184, 137, true, [""])}</span>`,
+        );
+      }
       tile.setAttribute("role", "button");
       tile.setAttribute("tabindex", "0");
       tile.setAttribute(
         "aria-label",
-        `${side === "L" ? "左" : "右"}の穴: ${spoken(side === "L" ? r.goal.left : r.goal.right)}`,
+        `${side === "L" ? "左" : "右"}の穴: ${spoken(state.rooms[r.children[side === "L" ? 0 : 1]].goal)}`,
       );
       tile.onkeydown = (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -433,17 +501,91 @@ function renderRoom() {
       };
     }
   }
+  const jointLayouts: (() => void)[] = [];
+  app.querySelectorAll<SVGElement>(".goal .joint").forEach((visual) => {
+    if (visual.closest(".half-filled")) return;
+    const frame = visual.closest<HTMLElement>(".goal-frame")!;
+    const joint = document.createElement("button");
+    joint.className = "joint-button";
+    joint.dataset.path = visual.dataset.path;
+    const dropSide = frame.querySelector<HTMLElement>(".goal")!.dataset.drop;
+    let formula =
+      dropSide === "L" || dropSide === "R"
+        ? state.rooms[r.children[dropSide === "L" ? 0 : 1]].goal
+        : r.goal;
+    for (const side of visual.dataset.path ?? "")
+      if (typeof formula !== "string")
+        formula = side === "L" ? formula.left : formula.right;
+    joint.setAttribute("aria-label", `split ${spoken(formula)}`);
+    const position = () => {
+      const box = visual.getBoundingClientRect(),
+        parent = frame.getBoundingClientRect();
+      joint.style.left = `${box.x + box.width / 2 - parent.x}px`;
+      joint.style.top = `${box.y + box.height / 2 - parent.y}px`;
+      joint.style.width = `${Math.max(48, box.width + 16)}px`;
+      joint.style.height = `${Math.max(48, box.height + 16)}px`;
+    };
+    jointLayouts.push(position);
+    frame.append(joint);
+    position();
+    let pressing = false,
+      cancelled = false;
+    joint.onclick = (event) => {
+      event.stopPropagation();
+      if (cancelled) {
+        cancelled = false;
+        return;
+      }
+      const path = [
+        ...(dropSide === "L" || dropSide === "R" ? dropSide : ""),
+        ...(joint.dataset.path ?? ""),
+      ] as ("L" | "R")[];
+      visual.classList.add("tapped");
+      commit({ type: "decompose", path });
+      visual.classList.remove("tapped");
+    };
+    joint.onpointerdown = (event) => {
+      pressing = true;
+      cancelled = false;
+      joint.setPointerCapture(event.pointerId);
+      joint.classList.add("pressed");
+    };
+    joint.onpointermove = (event) => {
+      if (!pressing) return;
+      const box = joint.getBoundingClientRect();
+      if (
+        event.clientX < box.left - 8 ||
+        event.clientX > box.right + 8 ||
+        event.clientY < box.top - 8 ||
+        event.clientY > box.bottom + 8
+      ) {
+        cancelled = true;
+        joint.classList.remove("pressed");
+      }
+    };
+    joint.onpointerup = () => {
+      pressing = false;
+      joint.classList.remove("pressed");
+    };
+    joint.onpointercancel = () => {
+      pressing = false;
+      cancelled = true;
+      joint.classList.remove("pressed");
+    };
+  });
+  jointObserver = new ResizeObserver(() =>
+    jointLayouts.forEach((position) => position()),
+  );
+  app
+    .querySelectorAll(".goal-frame")
+    .forEach((frame) => jointObserver!.observe(frame));
   app.querySelector<HTMLElement>("#map")!.onclick = () => {
     selected = undefined;
     screen = "map";
     render();
   };
   app.querySelector<HTMLElement>("#undo")!.onclick = () => {
-    if (history.length) {
-      state = history.pop()!;
-      selected = undefined;
-      render();
-    }
+    if (history.length) undoLast();
   };
   app.querySelector<HTMLElement>("#reset")!.onclick = () =>
     commit({ type: "reset" });
@@ -489,13 +631,36 @@ function renderRoom() {
 function highlightHoles(key: number) {
   const held = state.rooms[state.current].keys[key].proof.formula;
   app
-    .querySelectorAll<HTMLElement>('[data-drop="door"], [data-key]')
+    .querySelectorAll<HTMLElement>(
+      '[data-drop="door"], [data-drop="L"], [data-drop="R"], [data-key]',
+    )
     .forEach((target) => {
+      const room = state.rooms[state.current];
+      const side = target.dataset.drop;
       const f =
-        target.dataset.drop === "door"
-          ? state.rooms[state.current].goal
-          : state.rooms[state.current].keys[Number(target.dataset.key)].proof
-              .formula;
+        side === "door"
+          ? room.goal
+          : side === "L" || side === "R"
+            ? state.rooms[room.children[side === "L" ? 0 : 1]].goal
+            : room.keys[Number(target.dataset.key)].proof.formula;
+      if (typeof f !== "string" && f.op === "∧") {
+        target
+          .closest(".goal-frame")
+          ?.querySelectorAll<HTMLElement>(".joint-button")
+          .forEach((joint) => {
+            let part: Formula = f;
+            for (const side of joint.dataset.path ?? "")
+              if (typeof part !== "string")
+                part = side === "L" ? part.left : part.right;
+            joint.classList.toggle(
+              "joint-hint",
+              typeof part !== "string" &&
+                [part.left, part.right].some((half) => equal(half, held)),
+            );
+          });
+        // A whole pair lights the door's outline, not the joint or half holes.
+        return;
+      }
       target
         .querySelectorAll<SVGElement>(".glow[data-path]")
         .forEach((halo) => {
@@ -530,8 +695,14 @@ function target(el: HTMLElement | SVGElement) {
       el.dataset.drop === "L" || el.dataset.drop === "R"
         ? el.dataset.drop
         : undefined;
-    if (selected === undefined) commit({ type: "intro", side });
-    else commit(doorAction(selected, side));
+    const room = state.rooms[state.current];
+    if (selected === undefined) {
+      if (!side && typeof room.goal !== "string" && room.goal.op === "∧") {
+        app.querySelector(".joint-button")?.classList.add("joint-hint");
+        return;
+      }
+      commit({ type: "intro", side });
+    } else commit(doorAction(selected, side));
   } else if (el.dataset.drop === "slot") {
     if (selected !== undefined) commit({ type: "split", key: selected });
   } else {
@@ -559,9 +730,16 @@ function toggleCaptions() {
 function hint(tutorial = false) {
   const action = solve(state)?.[0];
   if (!action) return;
+  const room = state.rooms[state.current];
   let selector =
-    action.type === "intro"
-      ? ".goal"
+    action.type === "intro" || action.type === "decompose"
+      ? typeof room.goal !== "string" &&
+        room.goal.op === "∧" &&
+        !room.children.length
+        ? '.joint-button[data-path=""]'
+        : room.mode === "∧I"
+          ? `.goal[data-drop="${state.rooms[room.children[0]].proof ? "R" : "L"}"]`
+          : ".goal"
       : "key" in action
         ? `[data-key="${action.key}"]`
         : ".goal";
@@ -593,6 +771,15 @@ function hint(tutorial = false) {
     el?.classList.remove("hint");
     dest?.classList.remove("hint");
   }, 2000);
+}
+function dropTargetAt(x: number, y: number): HTMLElement | undefined {
+  const element = document.elementFromPoint(x, y);
+  const joint = element?.closest(".joint-button");
+  return (
+    (joint
+      ? joint.closest(".goal-frame")?.querySelector<HTMLElement>(".goal")
+      : element?.closest<HTMLElement>("[data-drop]")) ?? undefined
+  );
 }
 function bindGestures() {
   app.querySelectorAll<HTMLElement>("[data-formula]").forEach((el) => {
@@ -673,10 +860,10 @@ function bindGestures() {
       if (floating) {
         floating.style.left = `${e.clientX}px`;
         floating.style.top = `${e.clientY - 65}px`;
-        const over =
-          document
-            .elementFromPoint(e.clientX, e.clientY - 65)
-            ?.closest<HTMLElement>("[data-drop].valid") ?? undefined;
+        const candidate = dropTargetAt(e.clientX, e.clientY - 65);
+        const over = candidate?.classList.contains("valid")
+          ? candidate
+          : undefined;
         if (over !== hovered) {
           hovered?.classList.remove("hovered");
           hovered = over;
@@ -696,15 +883,28 @@ function bindGestures() {
         e.preventDefault();
         el.addEventListener("click", swallow, true);
         if (dragged) {
-          const dest = document
-            .elementFromPoint(e.clientX, e.clientY - 65)
-            ?.closest<HTMLElement>("[data-drop]");
+          const dest = dropTargetAt(e.clientX, e.clientY - 65);
           const action = dest && dropAction(dest, selected!);
           if (action && preview(action)) commit(action);
           else {
             dropSource = dropShape = undefined;
             selected = undefined;
             render();
+            if (dest?.dataset.drop === "door") {
+              const joint = app.querySelector<SVGElement>(".goal .joint");
+              if (joint && !reduced()) {
+                joint.style.transformBox = "fill-box";
+                joint.style.transformOrigin = "center";
+                joint.animate(
+                  [
+                    { transform: "scale(1)" },
+                    { transform: "scale(1.04)" },
+                    { transform: "scale(1)" },
+                  ],
+                  { duration: 240, easing: "cubic-bezier(.65,0,.35,1)" },
+                );
+              }
+            }
           }
         }
       }
@@ -730,7 +930,7 @@ function doorAction(key: number, side?: "L" | "R"): Action {
   const room = state.rooms[state.current];
   const f = room.goal;
   const held = room.keys[key].proof.formula;
-  if (typeof f !== "string" && f.op === "∧" && !equal(f, held)) {
+  if (room.mode === "∧I" && typeof f !== "string" && f.op === "∧") {
     side ??= (["L", "R"] as const).find(
       (s) =>
         !filled(room).includes(s) && equal(s === "L" ? f.left : f.right, held),

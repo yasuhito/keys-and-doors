@@ -118,7 +118,7 @@ function band(a: Box, b: Box, t: number): Box {
     ? { x: p.x, y: p.y - t / 2, w: q.x - p.x, h: t }
     : { x: p.x - t / 2, y: p.y, w: t, h: q.y - p.y };
 }
-function layout(f: Formula, b: Box): Layout {
+function layout(f: Formula, b: Box, door = false): Layout {
   if (Math.min(b.w, b.h) < 10) return { kind: "fold", f, b };
   if (typeof f === "string")
     return {
@@ -129,12 +129,14 @@ function layout(f: Formula, b: Box): Layout {
       size: Math.min(b.w, b.h) * 0.92,
     };
   if (f.op === "∧") {
-    const { first, second, short } = split(b, (l) => clamp(6, l * 0.1, 16));
+    const { first, second, short } = split(b, (l) =>
+      door ? clamp(20, l * 0.16, 32) : clamp(6, l * 0.1, 16),
+    );
     return {
       kind: "pair",
       f,
       b,
-      parts: [layout(f.left, first), layout(f.right, second)],
+      parts: [layout(f.left, first, door), layout(f.right, second, door)],
       bar: band(first, second, clamp(4, short * 0.14, 10)),
     };
   }
@@ -286,6 +288,35 @@ export function picture(
           const locked = full || complete(part, at);
           const half = (child: Layout, side: string) =>
             `<g class="cut" data-path="${at + side}" data-part="${at + side}">${cut(child, at + side)}${child.kind === "pair" ? "" : seated(child, at + side, full || complete(child, at + side))}</g>`;
+          if (door) {
+            const horizontal = part.b.w >= part.b.h;
+            const gap = horizontal
+              ? part.parts[1].b.x - part.parts[0].b.x - part.parts[0].b.w
+              : part.parts[1].b.y - part.parts[0].b.y - part.parts[0].b.h;
+            const width = clamp(8, gap * 0.5, 14),
+              c = centre(part.b);
+            const joint = horizontal
+              ? {
+                  x: c.x - width / 2,
+                  y: part.b.y + 8,
+                  w: width,
+                  h: Math.max(8, part.b.h - 16),
+                }
+              : {
+                  x: part.b.x + 8,
+                  y: c.y - width / 2,
+                  w: Math.max(8, part.b.w - 16),
+                  h: width,
+                };
+            const grooves = [0.25, 0.5, 0.75]
+              .map((fraction) =>
+                horizontal
+                  ? `M${n(joint.x + 2)} ${n(joint.y + joint.h * fraction)}h${n(joint.w - 4)}`
+                  : `M${n(joint.x + joint.w * fraction)} ${n(joint.y + 2)}v${n(joint.h - 4)}`,
+              )
+              .join("");
+            return `<g class="joint" data-path="${at}"><g class="joint-body">${shift(2, rect(joint, width / 2, have.bar[1], have.bar[1]))}</g><g class="joint-face">${rect(joint, width / 2, have.bar[0], have.bar[1])}<path d="${grooves}" fill="none" stroke="${have.bar[1]}"/></g></g>${half(part.parts[0], "L")}${half(part.parts[1], "R")}${locked ? `<g class="seated">${rect(part.bar, t / 2, have.bar[0], have.bar[1])}</g>` : ""}`;
+          }
           return `<g class="bridge">${recess((c) => rect(part.bar, t / 2, c, c), clamp(1, t * 0.2, 2.5), p.hole)}${locked ? `<g class="seated">${rect(part.bar, t / 2, have.bar[0], have.bar[1])}</g>` : ""}</g>${half(part.parts[0], "L")}${half(part.parts[1], "R")}`;
         }
         case "imp":
@@ -307,7 +338,7 @@ export function picture(
   }
   const b = { x: 0, y: 0, w, h };
   if (goal) {
-    const l = layout(f, inset(b, Math.min(w, h) * 0.08));
+    const l = layout(f, inset(b, Math.min(w, h) * 0.08), true);
     // An if-then door is a pocket the shape of the key that fits it, with that key's face
     // on its floor: tap its hole to borrow that key (if-intro).
     const pocket =

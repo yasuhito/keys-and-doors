@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { start, move, solve } from "../src/core";
 import one from "../src/stages/layer-01.json" with { type: "json" };
+import { activateDoor } from "./controls";
 
 test("bare keys match door cutouts and only matching holes glow", async ({
   page,
@@ -21,7 +22,7 @@ test("bare keys match door cutouts and only matching holes glow", async ({
   await expect(
     page.locator('.goal .cut[data-path="L"] > path').first(),
   ).toHaveAttribute("d", keyPath!);
-  await page.locator(".goal").click();
+  await activateDoor(page);
   await page.locator('[data-key="1"]').click();
   await expect(page.locator(".goal")).not.toHaveClass(/valid/);
   await page.locator('[data-key="1"]').click();
@@ -31,7 +32,7 @@ test("bare keys match door cutouts and only matching holes glow", async ({
     1,
   );
   await page.locator(".goal").click();
-  await expect(page.locator('.chip.here[data-room="2"]')).toBeVisible();
+  await expect(page.locator('.chip.here[data-room="0"]')).toBeVisible();
 });
 
 test("nested pair cutouts expose individual seating targets", async ({

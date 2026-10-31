@@ -104,7 +104,7 @@ function render() {
               const i = stages.findIndex((s) => s.id === stage.id),
                 active = i >= 0 && unlocked(i),
                 proof = progress.proofs[stage.id];
-              return `<div class="stage ${active ? "available" : "locked"} ${proof ? "cleared" : ""}"><button class="stage-door" data-stage="${i}" aria-label="${escape(stage.id)}${active ? "" : " ロック中"}" ${active ? "" : "disabled"}>${i >= 0 ? card(parse(stage.tasks[0].goal), "door") : `<span class="object door reserved">${icon("ui-lock")}</span>`}${pips(layer.stages.indexOf(stage) + 1)}</button>${proof ? button("ui-check", `${escape(stage.id)} 証明を再生`, `data-rewatch="${i}" class="badge"`) : !active ? `<span class="lock">${icon("ui-lock")}</span>` : ""}</div>`;
+              return `<div class="stage ${active ? "available" : "locked"} ${proof ? "cleared" : ""}"><button class="stage-door" data-stage="${i}" aria-label="${escape(stage.id)}${active ? "" : " ロック中"}" ${active ? "" : "disabled"}>${i >= 0 ? card(parse(stage.tasks[0].goal), "door", true, proof ? [""] : []) : `<span class="object door reserved">${icon("ui-lock")}</span>`}${pips(layer.stages.indexOf(stage) + 1)}</button>${proof ? button("ui-check", `${escape(stage.id)} 証明を再生`, `data-rewatch="${i}" class="badge"`) : !active ? `<span class="lock">${icon("ui-lock")}</span>` : ""}</div>`;
             })
             .join("")}</div></section>`,
       )
@@ -127,7 +127,7 @@ function render() {
   if (screen === "room") renderRoom();
   if (screen === "replay") renderReplay();
   if (screen === "settings") {
-    app.innerHTML = `<header>${button("ui-close", "閉じる", 'id="close"')}<h1>設定</h1></header><div class="settings">${(["captions", "left", "haptics", "reduced"] as const).map((key, i) => `<label><span>${["数式を表示", "左利き用の操作バー", "触覚フィードバック", "動きを減らす"][i]}</span><input type="checkbox" data-setting="${key}" ${progress[key] ? "checked" : ""}></label>`).join("")}<p>鍵を選んで、光る扉や鍵にタップ。鍵をドラッグしても操作できます。</p><p>輪の鍵は空き枠へ。差し込み口のある鍵を2回タップすると、必要な鍵を作る部屋へ進めます。</p><p>カードを長押しすると数式を表示します。リセットは部屋を戻し、長押しするとステージ全体を戻します。</p><p>第1・第2層が遊べます。それ以降の規則は未対応です。</p><button id="credits" class="credits-link">クレジット</button></div>`;
+    app.innerHTML = `<header>${button("ui-close", "閉じる", 'id="close"')}<h1>設定</h1></header><div class="settings">${(["captions", "left", "haptics", "reduced"] as const).map((key, i) => `<label><span>${["数式を表示", "左利き用の操作バー", "触覚フィードバック", "動きを減らす"][i]}</span><input type="checkbox" data-setting="${key}" ${progress[key] ? "checked" : ""}></label>`).join("")}<p>鍵を選んで、光る扉や鍵にタップ。鍵をドラッグしても操作できます。</p><p>棒でつながった鍵は空き枠へ。穴のある鍵を2回タップすると、穴にはまる鍵を作る部屋へ進めます。</p><p>カードを長押しすると数式を表示します。リセットは部屋を戻し、長押しするとステージ全体を戻します。</p><p>第1・第2層が遊べます。それ以降の規則は未対応です。</p><button id="credits" class="credits-link">クレジット</button></div>`;
     app.querySelectorAll<HTMLInputElement>("[data-setting]").forEach(
       (el) =>
         (el.onchange = () => {
@@ -165,7 +165,7 @@ function renderRoom() {
     selected === undefined
       ? undefined
       : preview({ type: "split", key: selected });
-  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node")}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door")}${ghosts(usePreview)}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
+  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door")}${ghosts(usePreview)}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
     .map((k, i) => {
       const forms =
         selected === undefined
@@ -175,7 +175,7 @@ function renderRoom() {
     })
     .join(
       "",
-    )}<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: 輪の鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button></div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
+    )}<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: つながった鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button></div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
   app.querySelector<HTMLElement>("#map")!.onclick = () => {
     selected = undefined;
     screen = "map";
@@ -223,6 +223,14 @@ function renderRoom() {
     }
   };
   bindGestures();
+}
+// A pair door shows each half it has already opened with its key seated.
+function filled(room: State["rooms"][number]) {
+  if (room.proof) return [""];
+  if (room.mode !== "∧I") return [];
+  return room.children.flatMap((c, i) =>
+    state.rooms[c].proof ? [i ? "R" : "L"] : [],
+  );
 }
 function ribbon(ids: number[]) {
   return ids.length
@@ -401,7 +409,7 @@ function bindGestures() {
       render();
     };
     if (el.dataset.key !== undefined) {
-      // A socket's auxiliary goal can be entered with keyboard or a second quick tap.
+      // A room that makes the key for an if-then slot opens with keyboard or a second quick tap.
       el.ondblclick = () => {
         const key = Number(el.dataset.key);
         const f = state.rooms[state.current].keys[key].proof.formula;

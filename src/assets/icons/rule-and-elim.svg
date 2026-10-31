@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title>And-elim: pull one key off a pair</title>
-  <rect x="2.5" y="10" width="8" height="11" rx="2"/>
-  <path d="M10.5 5.6A3 3 0 0 0 9.3 9.8"/>
-  <rect x="14.5" y="5" width="7" height="10" rx="2" transform="rotate(12 18 10)"/>
-  <path d="M15 20.5h6M18.5 18l2.5 2.5-2.5 2.5" stroke-width="1.75"/>
+  <title>And-elim: snap a pair key into its two keys</title>
+  <rect x="1.5" y="7" width="7" height="11" rx="2" transform="rotate(-10 5 12.5)"/>
+  <rect x="15.5" y="7" width="7" height="11" rx="2" transform="rotate(10 19 12.5)"/>
+  <path d="M9 12h1.5l.75-1M15 12h-1.5l-.75 1" stroke-width="2.5"/>
+  <circle cx="5" cy="12.5" r="1.5" fill="currentColor" stroke="none"/>
+  <circle cx="19" cy="12.5" r="1.5" fill="currentColor" stroke="none"/>
 </svg>

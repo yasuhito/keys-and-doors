@@ -371,6 +371,15 @@ footer button,
   outline: 3px solid var(--ok);
   outline-offset: 3px;
 }
+.picture .glow {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.valid > .object .picture .glow,
+.hint > .object .picture .glow {
+  opacity: 1;
+  animation: glow 1.2s ease-in-out infinite;
+}
 .ghosts {
   display: flex;
   position: absolute;
@@ -644,6 +653,11 @@ footer button[aria-pressed="true"] {
 @keyframes pulse {
   50% {
     outline-offset: 7px;
+  }
+}
+@keyframes glow {
+  50% {
+    opacity: 0.45;
   }
 }
 @keyframes hand {

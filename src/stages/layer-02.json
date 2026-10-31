@@ -1,0 +1,74 @@
+{
+  "id": "layer-02",
+  "stages": [
+    {
+      "id": "stage-005",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "Q",
+          "assumptions": [
+            "P",
+            "P → Q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-006",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P → ((P → Q) → Q)",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-007",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(P → P) ∧ (Q → (P → Q))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-008",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P → R",
+          "assumptions": [
+            "P → Q",
+            "Q → R"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-009",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "R",
+          "assumptions": [
+            "Q",
+            "(P → Q) → R"
+          ]
+        }
+      ]
+    }
+  ]
+}

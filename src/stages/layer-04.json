@@ -1,0 +1,73 @@
+{
+  "id": "layer-04",
+  "stages": [
+    {
+      "id": "stage-015",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "Q",
+          "assumptions": [
+            "P",
+            "P → ⊥"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-016",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P → ¬¬P",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-017",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬Q → ¬P",
+          "assumptions": [
+            "P → Q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-018",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "Q",
+          "assumptions": [
+            "P ∨ Q",
+            "¬P"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-019",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬(P ∨ ¬P)",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

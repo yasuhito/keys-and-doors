@@ -1,0 +1,124 @@
+{
+  "id": "layer-20",
+  "stages": [
+    {
+      "id": "stage-099",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.(0 ≤ x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.(0 + x = x)"
+      ],
+      "definitions": [
+        "additive-order"
+      ]
+    },
+    {
+      "id": "stage-100",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∃x.∀y.(x ≤ y)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.(0 ≤ x)"
+      ],
+      "definitions": [
+        "additive-order"
+      ]
+    },
+    {
+      "id": "stage-101",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.(x ≤ s(x))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ],
+      "definitions": [
+        "additive-order"
+      ]
+    },
+    {
+      "id": "stage-102",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.∀z.(x ≤ y → (y ≤ z → x ≤ z))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.∀z.((x + y) + z = x + (y + z))"
+      ],
+      "definitions": [
+        "additive-order"
+      ]
+    },
+    {
+      "id": "stage-103",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∃y.(∃z.(x + z = y) ∧ ¬(y = x))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-104",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∃y.(x ≤ y ∧ ¬(y = x))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))",
+            "∀x.¬(s(x) = 0)",
+            "∀x.∀y.(s(x) = s(y) → x = y)"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.(x ≤ s(x))"
+      ],
+      "definitions": [
+        "additive-order"
+      ]
+    }
+  ]
+}

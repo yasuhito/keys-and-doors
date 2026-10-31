@@ -1,0 +1,82 @@
+{
+  "id": "layer-19",
+  "stages": [
+    {
+      "id": "stage-095",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))",
+            "∀x.(x * 0 = 0)",
+            "∀x.∀y.(x * s(y) = x * y + x)"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.∀z.(x * (y + z) = x * y + x * z)"
+      ]
+    },
+    {
+      "id": "stage-096",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(s(x) * y = x * y + y)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))",
+            "∀x.(x * 0 = 0)",
+            "∀x.∀y.(x * s(y) = x * y + x)"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.∀z.((x + y) + z = x + (y + z))",
+        "∀x.∀y.(x + y = y + x)"
+      ]
+    },
+    {
+      "id": "stage-097",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x * y = y * x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))",
+            "∀x.(x * 0 = 0)",
+            "∀x.∀y.(x * s(y) = x * y + x)"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.(0 * x = 0)",
+        "∀x.∀y.(s(x) * y = x * y + y)"
+      ]
+    },
+    {
+      "id": "stage-098",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.∀z.(∃k.(x * k = y) → (∃m.(y * m = z) → ∃n.(x * n = z)))",
+          "assumptions": []
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.∀z.((x * y) * z = x * (y * z))"
+      ]
+    }
+  ]
+}

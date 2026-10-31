@@ -1,0 +1,55 @@
+{
+  "id": "layer-15",
+  "stages": [
+    {
+      "id": "stage-082",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "e = e'",
+          "assumptions": [
+            "∀x.(e * x = x)",
+            "∀x.(x * e' = x)"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.(x = y → y = x)",
+        "∀x.∀y.∀z.(x = y → (y = z → x = z))"
+      ]
+    },
+    {
+      "id": "stage-083",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "m = n",
+          "assumptions": [
+            "∀x.∀y.((x ≤ y ∧ y ≤ x) → x = y)",
+            "∀x.(x ≤ m)",
+            "∀x.(x ≤ n)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-084",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x < y → ¬(y < x))",
+          "assumptions": [
+            "∀x.¬(x < x)",
+            "∀x.∀y.∀z.((x < y ∧ y < z) → x < z)"
+          ]
+        }
+      ]
+    }
+  ]
+}

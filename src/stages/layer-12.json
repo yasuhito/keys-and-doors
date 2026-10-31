@@ -1,0 +1,65 @@
+{
+  "id": "layer-12",
+  "stages": [
+    {
+      "id": "stage-064",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬(P ∨ ¬P)",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-065",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬(¬¬P → P)",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-066",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬((P → Q) ∨ (Q → P))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-067",
+      "kind": "infinite-countermodel",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬∀x.(P(x) ∨ ¬P(x))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-068",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬∀x.¬¬(P(x) ∨ ¬P(x))",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

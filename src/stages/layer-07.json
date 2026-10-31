@@ -1,0 +1,75 @@
+{
+  "id": "layer-07",
+  "stages": [
+    {
+      "id": "stage-032",
+      "kind": "countermodel",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P ∨ ¬P",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-033",
+      "kind": "countermodel",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬P → P",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-034",
+      "kind": "countermodel",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "((P → Q) → P) → P",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-035",
+      "kind": "countermodel",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬P ∨ ¬Q",
+          "assumptions": [
+            "¬(P ∧ Q)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-036",
+      "kind": "classify",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬¬P → ¬P",
+          "assumptions": []
+        },
+        {
+          "goal": "(¬P → ¬Q) → (Q → P)",
+          "assumptions": []
+        },
+        {
+          "goal": "(P → Q) ∨ (Q → P)",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

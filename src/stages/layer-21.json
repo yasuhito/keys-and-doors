@@ -1,0 +1,175 @@
+{
+  "id": "layer-21",
+  "stages": [
+    {
+      "id": "stage-105",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x ≤ y ∨ y ≤ x)",
+          "assumptions": [
+            "∀x.(x ≤ x)",
+            "∀x.∀y.((x ≤ y ∧ y ≤ x) → x = y)",
+            "∀x.∀y.∀z.((x ≤ y ∧ y ≤ z) → x ≤ z)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-106",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.((x ≤ y ∧ y ≤ x) → x = y)",
+          "assumptions": [
+            "∀x.(x ≤ x)",
+            "∀x.∀y.∀z.((x ≤ y ∧ y ≤ z) → x ≤ z)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-107",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(x ≤ m)",
+          "assumptions": [
+            "∀x.(x ≤ x)",
+            "∀x.∀y.((x ≤ y ∧ y ≤ x) → x = y)",
+            "∀x.∀y.∀z.((x ≤ y ∧ y ≤ z) → x ≤ z)",
+            "∀x.(m ≤ x → x = m)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-108",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(x * e = x)",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-109",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "e = e'",
+          "assumptions": [
+            "∀x.(e * x = x)",
+            "∀x.(e' * x = x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-110",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x * y = y * x)",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)",
+            "∀x.(x * e = x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-111",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(x * x = e)",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)",
+            "∀x.(i(x) * x = e)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-112",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x * y = y * x)",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)",
+            "∀x.(i(x) * x = e)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-113",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(0 + x = x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-114",
+      "kind": "classify",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x < y → ¬(y < x))",
+          "assumptions": [
+            "∀x.¬(x < x)",
+            "∀x.∀y.∀z.((x < y ∧ y < z) → x < z)"
+          ]
+        },
+        {
+          "goal": "∀x.∀y.((x < y ∨ x = y) ∨ y < x)",
+          "assumptions": [
+            "∀x.¬(x < x)",
+            "∀x.∀y.∀z.((x < y ∧ y < z) → x < z)"
+          ]
+        },
+        {
+          "goal": "∀x.∃y.(x < y)",
+          "assumptions": [
+            "∀x.¬(x < x)",
+            "∀x.∀y.∀z.((x < y ∧ y < z) → x < z)"
+          ]
+        }
+      ]
+    }
+  ]
+}

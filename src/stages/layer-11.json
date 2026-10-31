@@ -1,0 +1,83 @@
+{
+  "id": "layer-11",
+  "stages": [
+    {
+      "id": "stage-059",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.P(x)",
+          "assumptions": [
+            "∃x.P(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-060",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∃y.R(x,y)",
+          "assumptions": [
+            "∃x.∀y.R(x,y)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-061",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.(M(x) ∧ ∃y.(C(y) ∧ F(x,y)))",
+          "assumptions": [
+            "∀x.(M(x) → ∀y.(C(y) → F(x,y)))",
+            "∃y.C(y)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-062",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃y.(C(y) ∧ ∀x.(M(x) → F(x,y)))",
+          "assumptions": [
+            "∀x.(M(x) → ∃y.(C(y) ∧ F(x,y)))",
+            "∃x.M(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-063",
+      "kind": "classify",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(∃y.∀x.R(x,y)) → (∀x.∃y.R(x,y))",
+          "assumptions": []
+        },
+        {
+          "goal": "(∀x.∃y.R(x,y)) → (∃y.∀x.R(x,y))",
+          "assumptions": []
+        },
+        {
+          "goal": "(∀x.(P(x) ∨ Q(x))) → ((∀x.P(x)) ∨ (∀x.Q(x)))",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

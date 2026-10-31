@@ -1,0 +1,69 @@
+{
+  "id": "layer-17",
+  "stages": [
+    {
+      "id": "stage-088",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "s(0) + s(0) = s(s(0))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-089",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.(0 + x = x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-090",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(s(x) + y = s(x + y))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-091",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x + y = y + x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.(0 + x = x)",
+        "∀x.∀y.(s(x) + y = s(x + y))"
+      ]
+    }
+  ]
+}

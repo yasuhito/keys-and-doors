@@ -106,14 +106,16 @@ export type Room = {
   children: number[];
   mode?: "∧I" | "→I" | "lemma";
   proof?: Proof;
+  filled?: boolean;
   ribbon?: number;
 };
 export type State = { rooms: Room[]; current: number; initial: Formula[] };
 export type Action =
-  | { type: "intro" }
+  | { type: "intro"; side?: "L" | "R" }
   | { type: "reset" }
   | { type: "use" | "split" | "lemma"; key: number }
   | { type: "apply"; key: number; target: number }
+  | { type: "fill"; key: number; side: "L" | "R" }
   | { type: "visit"; room: number };
 export function start(goal: string, assumptions: string[]): State {
   const initial = assumptions.map(parse);
@@ -144,19 +146,54 @@ function add(room: Room, key: Key) {
   if (!room.keys.some((k) => equal(k.proof.formula, key.proof.formula)))
     room.keys.push(key);
 }
+export function visitable(state: State, index: number): boolean {
+  const target = state.rooms[index];
+  if (
+    !target ||
+    target.proof ||
+    (target.children.length && target.mode !== "∧I")
+  )
+    return false;
+  for (
+    let parent = target.parent;
+    parent !== undefined;
+    parent = state.rooms[parent].parent
+  )
+    if (state.rooms[parent].proof) return false;
+  return true;
+}
 export function move(state: State, action: Action): State {
   const s = structuredClone(state);
   const r = s.rooms[s.current];
   if (action.type === "visit") {
-    const target = s.rooms[action.room];
-    if (!target || target.proof || target.children.length)
-      throw Error("not open");
+    if (!visitable(s, action.room)) throw Error("not open");
     s.current = action.room;
     return s;
   }
-  if (r.proof || r.children.length) throw Error("closed room");
+  if (r.proof || (r.children.length && r.mode !== "∧I"))
+    throw Error("closed room");
   if (action.type === "reset") {
-    if (r.keys.length === r.entry.length) throw Error("nothing to reset");
+    const fills = r.children.filter((c) => s.rooms[c].filled);
+    for (const c of fills) {
+      delete s.rooms[c].proof;
+      delete s.rooms[c].filled;
+    }
+    const unopened =
+      r.mode === "∧I" &&
+      r.children.every(
+        (c, i) =>
+          c === s.rooms.length - r.children.length + i &&
+          !s.rooms[c].proof &&
+          !s.rooms[c].children.length &&
+          s.rooms[c].keys.length === s.rooms[c].entry.length,
+      );
+    if (r.keys.length === r.entry.length && !fills.length && !unopened)
+      throw Error("nothing to reset");
+    if (unopened) {
+      s.rooms.length -= r.children.length;
+      r.children = [];
+      delete r.mode;
+    }
     r.keys = structuredClone(r.entry);
     return s;
   }
@@ -192,6 +229,15 @@ export function move(state: State, action: Action): State {
   };
   if (action.type === "intro") {
     const f = r.goal;
+    if (r.children.length) {
+      const child = action.side
+        ? r.children[action.side === "L" ? 0 : 1]
+        : r.children.find((c) => !s.rooms[c].proof);
+      if (child === undefined || s.rooms[child].proof)
+        throw Error("closed half");
+      s.current = child;
+      return s;
+    }
     if (typeof f === "string") throw Error("atomic door");
     r.mode = f.op === "∧" ? "∧I" : "→I";
     for (const goal of f.op === "∧" ? [f.left, f.right] : [f.right]) {
@@ -212,12 +258,31 @@ export function move(state: State, action: Action): State {
       r.children.push(s.rooms.length);
       s.rooms.push(child);
     }
-    s.current = r.children[0];
+    s.current = r.children[action.side === "R" && f.op === "∧" ? 1 : 0];
     return s;
   }
   const key = r.keys[action.key];
   if (!key) throw Error("missing key");
   const f = key.proof.formula;
+  if (action.type === "fill") {
+    const goal = r.goal;
+    if (typeof goal === "string" || goal.op !== "∧")
+      throw Error("not pair door");
+    if (!equal(f, action.side === "L" ? goal.left : goal.right))
+      throw Error("mismatch");
+    if (!r.children.length) {
+      r.mode = "∧I";
+      for (const half of [goal.left, goal.right]) {
+        r.children.push(s.rooms.length);
+        s.rooms.push(openRoom(half, r.keys, s.current));
+      }
+    }
+    const child = r.children[action.side === "L" ? 0 : 1];
+    if (s.rooms[child].proof) throw Error("closed half");
+    finish(child, key.proof);
+    s.rooms[child].filled = true;
+    if (!r.proof) s.current = state.current;
+  }
   if (action.type === "use") {
     if (!equal(f, r.goal)) throw Error("mismatch");
     finish(s.current, key.proof);
@@ -250,6 +315,7 @@ export function move(state: State, action: Action): State {
     });
   }
   if (action.type === "lemma") {
+    if (r.children.length) throw Error("pair already open");
     if (typeof f === "string" || f.op !== "→") throw Error("not socket");
     r.mode = "lemma";
     r.children = [s.rooms.length];

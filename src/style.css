@@ -379,6 +379,80 @@ body:has(.drag-copy) .fit-preview {
 body:has(.drag-copy) .hovered .fit-preview {
   display: block;
 }
+.motion-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.motion-layer > .picture {
+  width: 100%;
+  height: 100%;
+}
+.object.door > .motion-layer {
+  inset: 58px 13px 45px;
+}
+.opening-light {
+  position: fixed;
+  z-index: 0;
+  border-radius: 110px 110px 9px 9px;
+  background: #ffe7a8;
+  box-shadow: 0 0 80px 35px #ffe7a866;
+  pointer-events: none;
+}
+.delivered-frame,
+.delivered-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.motion-rim,
+.result-flight {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+}
+.motion-rim .object,
+.result-flight .object {
+  width: 100%;
+  height: 100%;
+}
+.motion-rim .picture > :not(:first-child),
+.motion-rim .caption,
+.result-flight .caption {
+  visibility: hidden;
+}
+.door-preview {
+  position: absolute;
+  inset: 76px 31px 63px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.door-preview .picture {
+  width: 100%;
+  height: 100%;
+}
+body:has(.drag-copy) .door-preview {
+  display: none;
+}
+body:has(.drag-copy) .goal:has(.hovered) .door-preview,
+body:has(.drag-copy) .goal.hovered .door-preview {
+  display: block;
+}
+.goal [data-drop] {
+  cursor: pointer;
+  outline: none;
+}
+.goal [data-drop]:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+.goal [data-drop].hovered {
+  transform: none;
+}
+.goal:has([data-drop].hovered) {
+  transform: scale(1.04);
+}
 .door-fit {
   position: fixed;
   z-index: 20;
@@ -386,102 +460,6 @@ body:has(.drag-copy) .hovered .fit-preview {
 }
 .door-fit .caption {
   display: none;
-}
-.door-fit .fit-animation {
-  inset: 58px 13px 45px;
-}
-.key-flight {
-  position: fixed;
-  z-index: 20;
-  opacity: 0;
-  pointer-events: none;
-}
-.key-flight .object.key {
-  width: 100%;
-  height: 100%;
-}
-.key-flight .caption {
-  display: none;
-}
-.fit-animation {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.fit-animation > span {
-  position: absolute;
-  inset: 0;
-}
-.fit-animation .seating {
-  animation: seat-key 320ms ease-out both;
-}
-.fit-animation .obtained {
-  animation: obtain-key 1120ms ease-out both;
-}
-.fit-animation .obtained .picture > :not(.arrow, .result, .cut),
-.fit-animation .obtained .cut > :not(.arrow, .result) {
-  opacity: 0;
-}
-.fit-animation .obtained :is(.picture, .cut) > .arrow {
-  stroke-dasharray: 50;
-  animation: light-arrow 520ms ease-out both;
-}
-.fit-animation .obtained :is(.picture, .cut) > .result {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: colour-result 1120ms ease-out both;
-}
-@keyframes seat-key {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes obtain-key {
-  0%,
-  28% {
-    opacity: 0;
-  }
-  29%,
-  73% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-@keyframes light-arrow {
-  0%,
-  61% {
-    stroke-dashoffset: 50;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes colour-result {
-  0%,
-  46% {
-    opacity: 0;
-    transform: scale(1);
-  }
-  60% {
-    opacity: 0.5;
-    transform: scale(1.08);
-  }
-  73%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.reduced .fit-animation .seating,
-.reduced .fit-animation .obtained,
-.reduced .fit-animation .arrow,
-.reduced .fit-animation .result {
-  animation: none;
 }
 .ghosts {
   display: flex;

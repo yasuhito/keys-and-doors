@@ -45,7 +45,7 @@ Each atom has a fixed colour **and** a fixed silhouette, so the four atoms stay 
 | R | Leaf: a pointed leaf with a stem stub | `#1E9A6C` | `#0F6A48` | `atom-leaf.svg` |
 | S | Star: five sharp points | `#C2509E` | `#8A2F6E` | `atom-star.svg` |
 
-Each silhouette is **one closed outline** on a 48 × 48 grid (`outlines` in `src/picture.ts`, the same path data as the atom icons). A key's thickness, its hole, its halo, and its fit flash are all drawn from that one path, so they can never disagree. Rules for the outlines:
+Each silhouette is **one closed outline** on a 48 × 48 grid (`outlines` in `src/picture.ts`, the same path data as the atom icons). A key's thickness, its hole, and its halo are all drawn from that one path, so they can never disagree. Rules for the outlines:
 
 - No separate strokes and no holes inside the outline: anything that is not part of the outline would not be part of the hole either. The sun's rays are part of its outline; the leaf's stem is a solid stub, not a line.
 - The silhouettes differ in kind (disc with eight slim rays, crescent, leaf, five sharp points), not just in size. Every one stays recognisable at about 16 px, the size of a nested atom in a tray key on a phone.
@@ -342,51 +342,67 @@ If the result is a key that is already in the tray, the preview highlights the e
 
 ## 6. What each move looks like
 
-Times are from the moment the finger lifts. "Fly" is a move along a straight line with `cubic-bezier(.2, .8, .2, 1)`; everything else is ease-out unless stated. Every motion below is built from three shared pieces: the **seat** (6.1), the **lift** (the seat reversed), and the existing camera zoom.
+Times are in milliseconds from the moment the finger lifts. Every step uses one of the four named curves in section 8 (`fly`, `out`, `in-out`, `linear`); a step with no curve named uses `out`. Steps in one table never overlap unless a row says "at the same time". The short **beats** (60 ms with nothing moving) are part of the timing, not slack.
+
+Every scale obeys section 8: arrivals approach their final size from one side and stop; only an emphasis pulse may go past its resting size, by at most 4%, once.
 
 ### 6.1 The seat: a key goes into its hole
-
-![Seat motion in close-up](mockups/seat.svg)
 
 Every time a key goes into a hole (a door hole, a half of a pair door, the hole of an if-then key, an if-then pocket) it makes the same motion. Because the key and the hole share one outline, the motion is designed to show that the outlines coincide.
 
 | Time (ms) | Phase | What moves |
 | --- | --- | --- |
-| 0 to 180 | **Align** | The dragged copy flies from the finger to its pose **above the hole**: centred on the hole, rotation −5° → 0°, scaled so that its outline is **106%** of the hole's, raised **6 px**. Its thickness still shows, and its **shadow** (the same outline in black at 40%, blurred 2 px, offset 2 px right and 8 px down) lies on the surface around the hole. The halo keeps pulsing |
-| 180 to 260 | **Drop** | Ease-in `cubic-bezier(.5, 0, 1, 1)`, because it falls. Scale 106% → 100%, lift 6 → 0 px, shadow opacity → 0, and the thickness shrinks to nothing (the `.body` copy moves up by `t`): the key sinks flush. At 260 ms the static state switches to seated, the halo switches off, and a medium haptic plays |
-| 260 to 420 | **Flash** | A `light` outline traces the shared outline, just outside it: stroke `clamp(1.5, 5% of the silhouette size, 3)` px, drawn under the seated face. It scales 100% → 112% about the hole's centre and fades 1 → 0 |
+| 0 to 220 | **Fly** | The dragged copy flies to the hole's centre (`fly`), rotation −5° → 0°, until its face is **104% of the seated size**. The thickness and halo fade out over 0 to 160 (`linear`), so only the coloured face arrives |
+| 220 to 340 | **Key settles** | The face shrinks 104% → 100% of the seated size and moves down by the hole's depth `d` (2.5), sinking flush (`out`). Medium haptic at 220, the moment of contact. At 340 the copy is removed and the picture is redrawn seated, with identical pixels |
 
 Implementation notes:
 
-- The pose and size come from the target's `.cut[data-path="…"]` (2.6): the hole is the bounding box of that element without its `.glow` children (a halo reaches 3.5 px beyond the outline). The copy is `picture(key)` for the dragged key, so it already has its thickness. The flash is the seated face's outline restroked, so it needs no new geometry.
+- The pose and size come from the target's `.cut[data-path="…"]` (2.6), without its `.glow` children. The seated size is 100% of the hole (2.6); the static seated face supplies the arrival geometry.
 - A pair key going into a pair hole, and an if-then key going into a pocket, seat as one piece with the same timings.
 - A key never moves towards a hole of another outline: such holes do not glow, and a drop there flies the copy back to its slot (200 ms ease-out, section 5.1). The player learns the fit from the outlines, not from an error.
 
-The **lift** is the drop reversed (80 ms, ease-out): the shape gains its thickness, rises 6 px, grows to 106%, and its shadow fades in. It is used when something new comes out of a picture: the result of an if-then (6.2) and a borrowed key (6.6).
+The result of an if-then gains its thickness during delivery (6.2). A borrowed key rises directly into the tray (6.6), without an overshoot or an extra lift beat.
 
 ### 6.2 Fitting a key into an if-then key (if-elim)
 
-![If-elim storyboard](mockups/fit.svg)
+The runtime motion is `fitMotion()` in `src/motion.ts`, which follows the table below.
 
 The player drops key A on an if-then key A → B.
 
 | Time (ms) | What moves |
 | --- | --- |
-| 0 to 420 | Seat A into the hole of A (6.1). Afterwards the key shows `filled: ["S"]` |
-| 420 to 620 | The arrow lights: a `lit` copy of `.arrow` (stroke × 1.25) is drawn from tail to head by animating `stroke-dashoffset` from the path length to 0 |
-| 620 to 920 | The grey half fills: the coloured `.result` (from `filled: [""]`) fades in over the grey one (opacity 0 → 1, 300 ms) and pulses scale 1 → 1.08 → 1 about its centre. A four-point `light` sparkle shows at its top right and fades out in 250 ms |
-| 920 to 1000 | The coloured result **lifts** out of the plate (6.1) |
-| 1000 to 1300 | It flies to its new tray slot (ease-in-out, 300 ms), scaling to the tray key size. At the same time the if-then key cross-fades back to its empty state (200 ms), because keys are never used up |
+| 0 to 340 | Fly and Key settles (6.1). Afterwards the key shows `filled: ["S"]` |
+| 340 to 400 | Beat: nothing moves |
+| 400 to 620 | **Arrow lights**: a `lit` copy of `.arrow` (stroke × 1.25), with `pathLength="1"`, `stroke-dasharray: 1`, `stroke-dashoffset` 1 → 0, drawn tail to head (`in-out`) |
+| 620 to 680 | Beat: nothing moves |
+| 680 to 920 | **Result fills with colour**: the coloured `.result` from `filled: [""]` fades in over the grey one, opacity 0 → 1 (`out`). Nothing changes size |
+| 920 to 1160 | **Result is obtained**: redraw `filled: [""]`. The `.result` pulses 1 → 1.04 → 1, peak at 1040 (`in-out`). Light haptic at 920. A four-point `light` sparkle at its top right grows 0 → 1 over 920 to 1040 (`out`) and fades over 1040 to 1160 (`linear`) |
+| 1160 to 1460 | **Delivered**: a coloured result copy moves to its tray slot (`in-out`), scaling to the tray key size. Its thickness fades in over 1340 to 1460 (`out`). At the same time, over 1160 to 1360, the if-then key cross-fades back to its empty state (`out`), because keys are never used up |
 
-If key B is already in the tray, the result flies to that key instead, which pulses (scale 1 → 1.06 → 1, 200 ms); no duplicate is added. Both input keys stay.
+Total: 1460 ms. If key B is already in the tray, the Delivered copy moves to that key and disappears into it. That key then pulses 1 → 1.04 → 1 over 1460 to 1700 (`in-out`); no duplicate is added. Both input keys stay.
+
+**Input during the animation.** The state changes at 0; the animation only shows it. A new touch anywhere jumps every running animation to its end state at once, and the touch is then handled as normal. Undo works the same way.
 
 ### 6.3 Filling a pair door (and-intro)
 
-![Pair door storyboard](mockups/pair.svg)
+The runtime motion is `fitMotion()` in `src/motion.ts`, which follows the timings below.
 
-- Dropping a key into one hole of a pair door: seat it (6.1). The hole stays seated (`filled: ["L"]` or `["R"]`). Under the hood this is and-intro followed by assumption use in that half's room, and the view stays on the pair door.
-- Tapping a hole the player cannot fill directly: the camera zooms into that hole (300 ms, ease-in-out) and the room's door becomes that half. The path bar forks. When that room is cleared, the camera zooms back out (300 ms) and the hole's key seats as in 6.1, starting from the align pose.
-- When the last hole seats, the **bar** seats into the channel with the same align and drop (a `brass` bar at 106%, 6 px up, then flush, 0 to 260 ms after the last flash), with a medium haptic. Then the **whole** outline of the pair (both shapes and the bar) flashes (260 to 420), and the door opens as in 6.5.
+Under the hood, filling a hole is and-intro followed by assumption use in that half's room; the view stays on the pair door.
+
+**First hole:** Fly and Key settles (6.1), 0 to 340. Medium haptic at 220. At 340 redraw that hole seated (`filled: ["L"]` or `["R"]`). Nothing else moves: the other hole stays empty, and the action ends at 340.
+
+**Last hole:**
+
+| Time (ms) | What moves |
+| --- | --- |
+| 0 to 340 | Fly and Key settles. Medium haptic at 220 |
+| 340 to 400 | Beat: nothing moves |
+| 400 to 620 | **Bar locks**: the flush `brass` bar grows inside the channel from its centre outward to both ends (`out`). Scale along the channel's long axis 0 → 1 about its centre; across the channel it is full size throughout. No overshoot |
+| 620 | Redraw `filled: [""]`. Medium haptic |
+| 620 to 680 | Beat: nothing moves |
+| 680 | The door opens as in 6.5, with 680 as its start |
+
+**A hole the player cannot fill directly:** tapping it zooms into that hole (300 ms, `in-out`), and the room's door becomes that half. The path bar forks. On clearing that room, zoom back out (300 ms, `in-out`), then after a 60 ms beat the made shape fades in at 104% of the seated size and settles as in 6.1 (120 ms, `out`, medium haptic). If it was the last hole, Bar locks follows after a 60 ms beat.
 
 ### 6.4 Snapping a pair key (and-elim)
 
@@ -402,7 +418,7 @@ The pair key stays in its slot.
 
 ### 6.5 Opening a door (assumption use)
 
-Seat the key into the door (6.1, 0 to 420). Then the door swings open (420 to 820) and light spills out. The room is cleared: go to the next open sibling room on the path, or up to the parent. Clearing the stage's own door (the first chip) clears the stage.
+Fly and Key settles as in 6.1 (0 to 340), then a 60 ms beat. The door swings open over 400 to 800 (`in-out`) and light spills out: the `light` glow behind the leaf fades in over 500 to 800 (`out`). The success haptic plays at 800 if this clears the stage. The room is cleared: go to the next open sibling room on the path, or up to the parent. Clearing the stage's own door clears the stage.
 
 ### 6.6 Going through an if-then door (if-intro)
 
@@ -410,16 +426,15 @@ Seat the key into the door (6.1, 0 to 420). Then the door swings open (420 to 82
 
 | Time (ms) | What moves |
 | --- | --- |
-| 0 to 80 | The hole on the pocket floor hands out a **borrowed key**: a copy of the key it wants **lifts** out of it (6.1). Underneath, the hole shows that key seated (`filled: ["S"]`): while you are inside, you are assuming it |
-| 80 to 300 | The copy flies into the tray, scaling to the tray key size. A new ribbon wipes onto it (150 ms, from 150 ms) |
+| 0 to 300 | The hole hands out a **borrowed key**: a key of its shape rises out of the hole (scale 0.6 → 1) and flies into the tray. A new ribbon wipes onto it (150 ms). The hole shows that key seated |
 | 300 to 600 | The camera zooms into the grey half until it fills the door panel (ease-in-out). On the way the grey shape cross-fades into a hole of the same outline: the thing you will get becomes the thing you must make. This is the new room's door. The path adds a ribboned chip |
-| On clearing that room | The camera zooms back out (300 ms). The arrow lights and the grey half fills with colour exactly as in 6.2 (420 to 920, `filled: [""]`), then the door opens as in 6.5 |
+| On clearing that room | Zoom back out (300 ms, `in-out`). Then the Arrow lights, Result fills with colour, and Result is obtained steps of 6.2 run with their beats (a 60 ms beat, 220, 60, 240, 240 ms), then after a 60 ms beat the door opens as in 6.5 |
 
 **Scope.** A tray belongs to a room. Child rooms start with a copy of their parent's tray. Keys made in a room never flow back to the parent. A key made from ribboned keys carries all of their ribbons. When an if-intro room is cleared, its ribboned keys dissolve from view (scale to 0 with a sparkle, 250 ms), which shows that the borrowed key is given back.
 
 ### 6.7 Reduced motion
 
-Flights and camera moves become 150 ms cross-fades. The seat becomes one 150 ms cross-fade from the empty to the seated picture, and the flash becomes a static 1.5 px `light` outline shown for 300 ms. The arrow and the colour fill appear together in one 150 ms cross-fade. Pulses become static outlines.
+Flights and camera moves become 150 ms cross-fades (`linear`). Seating, the arrow, the colour fill, and the pair bar appear together in one 150 ms cross-fade from the empty to the filled picture. Nothing changes size: pulses, the settle, and the bar growth are dropped. Haptics stay.
 
 ## 7. Feedback without words
 
@@ -437,7 +452,9 @@ Stages 1 to 6 each introduce exactly one new move. On first entry, a ghost hand 
 
 ## 8. Motion and haptics
 
-- Easing: ease-out for anything arriving, ease-in-out for camera moves. No bounce larger than 4%.
+- Curves: `fly` = `cubic-bezier(.2, .8, .2, 1)`; `out` = `cubic-bezier(.22, 1, .36, 1)`; `in-out` = `cubic-bezier(.65, 0, .35, 1)`; `linear` = `linear`. None overshoots.
+- Arrivals never pass their final size. Only an emphasis pulse may pass its resting size: 1 → 1.04 → 1 once, peak at the middle. Hover at 104% is a held state. Looping signals change opacity or outline, never scale.
+- Durations: a step lasts 120 to 300 ms, separated by 60 ms beats. No action takes longer than 1.7 s before the board is calm again.
 - Haptics: light tick (valid target entered), medium (action committed), success pattern (stage cleared), soft double knock (invalid tap while a key is selected). Never vibrate on a plain miss.
 - Reduced motion: see 6.7. The tree replay shows the complete tree at once.
 

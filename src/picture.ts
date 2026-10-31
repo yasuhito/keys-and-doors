@@ -251,7 +251,7 @@ export function picture(
         full ||= complete(l, path);
         // Until its hole is filled, what an if-then gives is drawn grey.
         const result = full ? have : pending;
-        return `${plate ? `<g class="plate">${outline(l, 0, () => [p.plate[1], p.plate[1]], 3)}${outline(l, 0, () => [p.plate[0], p.plate[0]])}</g>` : ""}<g class="slot">${hole(l.parts[0], p, path + "S", full || complete(l.parts[0], path + "S"), path === "" && !goal, false)}</g><path class="arrow" d="${l.arrow}" fill="none" stroke="${full ? lit : p.arrow}" stroke-width="${n(l.stroke * (full ? 1.25 : 1))}" stroke-linecap="round" stroke-linejoin="round"/><g class="result">${face(l.parts[1], result, path + "T", full)}</g>`;
+        return `${plate ? `<g class="plate">${outline(l, 0, () => [p.plate[1], p.plate[1]], 3)}${outline(l, 0, () => [p.plate[0], p.plate[0]])}</g>` : ""}<g class="slot" data-part="${path}S">${hole(l.parts[0], p, path + "S", full || complete(l.parts[0], path + "S"), path === "" && !goal, false)}</g><path class="arrow" d="${l.arrow}" fill="none" stroke="${full ? lit : p.arrow}" stroke-width="${n(l.stroke * (full ? 1.25 : 1))}" stroke-linecap="round" stroke-linejoin="round"/><g class="result" data-part="${path}T">${face(l.parts[1], result, path + "T", full)}</g>`;
       }
     }
   }
@@ -268,10 +268,12 @@ export function picture(
     if (l.kind === "fold") return face(l, p, path, full);
     full ||= complete(l, path);
     const halos = (part: Layout, at: string): string =>
-      `<g class="glow" data-path="${at}">${outline(part, 0, () => [ok, ok], 7)}</g>` +
-      (door && part.kind === "pair"
-        ? halos(part.parts[0], at + "L") + halos(part.parts[1], at + "R")
-        : "");
+      complete(part, at)
+        ? ""
+        : `<g class="glow" data-path="${at}">${outline(part, 0, () => [ok, ok], 7)}</g>` +
+          (door && part.kind === "pair"
+            ? halos(part.parts[0], at + "L") + halos(part.parts[1], at + "R")
+            : "");
     const cut = (part: Layout, at: string): string => {
       const into = (c: string) => outline(part, 0, () => [c, c], 1);
       switch (part.kind) {
@@ -281,19 +283,22 @@ export function picture(
           return recess(into, depthOf(part), p.hole);
         case "pair": {
           const t = Math.min(part.bar.w, part.bar.h);
-          return `<g class="bridge">${recess((c) => rect(part.bar, t / 2, c, c), clamp(1, t * 0.2, 2.5), p.hole)}</g><g class="cut" data-path="${at}L">${cut(part.parts[0], at + "L")}</g><g class="cut" data-path="${at}R">${cut(part.parts[1], at + "R")}</g>`;
+          const locked = full || complete(part, at);
+          const half = (child: Layout, side: string) =>
+            `<g class="cut" data-path="${at + side}" data-part="${at + side}">${cut(child, at + side)}${child.kind === "pair" ? "" : seated(child, at + side, full || complete(child, at + side))}</g>`;
+          return `<g class="bridge">${recess((c) => rect(part.bar, t / 2, c, c), clamp(1, t * 0.2, 2.5), p.hole)}${locked ? `<g class="seated">${rect(part.bar, t / 2, have.bar[0], have.bar[1])}</g>` : ""}</g>${half(part.parts[0], "L")}${half(part.parts[1], "R")}`;
         }
         case "imp":
           return `${recess(into, depthOf(part), p.pocket)}<g class="imprint"${door ? "" : ' opacity="0.6"'}>${face(part, p, "~", false, false)}</g>`;
       }
     };
-    return `<g class="cut" data-path="${path}">${glow && !full ? halos(l, path) : ""}${cut(l, path)}${seated(l, path, full)}</g>`;
+    return `<g class="cut" data-path="${path}" data-part="${path}">${glow && !full ? halos(l, path) : ""}${cut(l, path)}${l.kind === "pair" ? "" : seated(l, path, full)}</g>`;
   }
   // A key seated in its hole sits flush: full size and no thickness, so the lip still
   // shows below it. A pair's bar seats only once both halves have.
   function seated(l: Layout, path: string, full: boolean): string {
     if (full)
-      return `<g class="seated">${face(l, have, path + "~", false)}</g>`;
+      return `<g class="seated" data-path="${path}">${face(l, have, path + "~", false)}</g>`;
     if (l.kind !== "pair") return "";
     return (
       seated(l.parts[0], path + "L", complete(l.parts[0], path + "L")) +

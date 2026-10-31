@@ -41,3 +41,25 @@ it("marks each pair hole with its path so one hole can glow alone", () => {
   expect(door).toContain('class="glow" data-path="L"');
   expect(door).toContain('class="glow" data-path="R"');
 });
+it("cuts each door hole with exactly the outline of the key that fits it", () => {
+  const outlineOf = (svg: string) => svg.match(/<path d="(M[^"]+Z)"/)![1];
+  for (const atom of ["P", "Q", "R", "S"]) {
+    const key = picture(atom, 88, 66);
+    const door = picture(atom, 184, 137, true);
+    expect(door).toContain(`d="${outlineOf(key)}"`);
+  }
+});
+it("draws a key as its own shape, not on a card", () => {
+  expect(picture("P", 88, 66)).not.toContain("<rect");
+  expect(picture(parse("P ∧ Q"), 88, 66)).toMatch(/<rect[^>]*fill="#D9A441"/);
+});
+it("seats an if-then key as it is, without using it", () => {
+  const seated = picture(parse("(P → Q) → R"), 184, 137, false, ["S"]);
+  expect(seated).toContain('class="seated"');
+  expect(seated).not.toContain("#2F6FD0");
+  expect(seated).not.toContain("#1E9A6C");
+});
+it("shows if-then halves of a pair door as pockets with the key's face", () => {
+  const door = picture(parse("(P → P) ∧ (Q → Q)"), 184, 137, true);
+  expect(door.match(/class="imprint"/g)).toHaveLength(2);
+});

@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <title>Star (atom S)</title>
-  <path d="M24.00 6.00L28.82 18.87L42.55 19.47L31.80 28.03L35.46 41.28L24.00 33.70L12.54 41.28L16.20 28.03L5.45 19.47L19.18 18.87Z" fill="#C2509E" stroke="#8A2F6E" stroke-width="2" stroke-linejoin="round"/>
+  <title>Star (atom S): the key is this shape</title>
+  <g transform="translate(1.92 0.5) scale(0.92)" stroke-linejoin="round">
+    <path d="M24 5.5L29.05 18.54L43.02 19.32L32.18 28.16L35.76 41.68L24 34.1L12.24 41.68L15.82 28.16L4.98 19.32L18.95 18.54Z" fill="#8A2F6E" stroke="#8A2F6E" stroke-width="2" transform="translate(0 2.6)"/>
+    <path d="M24 5.5L29.05 18.54L43.02 19.32L32.18 28.16L35.76 41.68L24 34.1L12.24 41.68L15.82 28.16L4.98 19.32L18.95 18.54Z" fill="#C2509E" stroke="#8A2F6E" stroke-width="2"/>
+  </g>
 </svg>

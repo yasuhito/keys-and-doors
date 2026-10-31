@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title>Use a key: the key matches the door</title>
-  <rect x="4" y="3" width="16" height="18" rx="3"/>
-  <circle cx="12" cy="10" r="2.5" fill="currentColor" stroke="none"/>
-  <path d="M11 11.5L10 17h4l-1-5.5Z" fill="currentColor" stroke-width="1.5"/>
+  <title>Use a key: a key sits flush in the hole of its own shape</title>
+  <rect x="3" y="3" width="18" height="18" rx="3"/>
+  <circle cx="12" cy="12" r="5.5"/>
+  <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/>
 </svg>

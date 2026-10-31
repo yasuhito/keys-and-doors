@@ -87,6 +87,40 @@ describe("five rules", () => {
     for (const action of rest) s = move(s, action);
     expect(checkProof(s.rooms[0].proof!, [])).toBe(true);
   });
+  it("room reset restores the tray each room had on entry, independent of path visits", () => {
+    let s = move(start("Q ∧ P", ["P ∧ Q"]), { type: "intro" });
+    expect(s.rooms.map((r) => r.entry.length)).toEqual([1, 1, 1]);
+    expect(() => move(s, { type: "reset" })).toThrow();
+    s = move(s, { type: "split", key: 0 });
+    s = move(s, { type: "visit", room: 2 });
+    s = move(s, { type: "split", key: 0 });
+    s = move(s, { type: "visit", room: 1 });
+    expect(s.rooms[1].keys).toHaveLength(3);
+    const before = structuredClone(s);
+    const reset = move(s, { type: "reset" });
+    expect(s).toEqual(before);
+    expect(reset.current).toBe(1);
+    expect(reset.rooms[1].keys).toEqual(reset.rooms[1].entry);
+    expect(reset.rooms[1].keys.map((k) => format(k.proof.formula))).toEqual([
+      "(P ∧ Q)",
+    ]);
+    expect(reset.rooms[2].keys).toHaveLength(3);
+    const cleared = move(reset, { type: "visit", room: 2 });
+    const done = move(cleared, { type: "use", key: 1 });
+    expect(done.current).toBe(1);
+    expect(move(cleared, { type: "reset" }).rooms[2].keys).toHaveLength(1);
+  });
+  it("socket rooms keep their discharged assumption on reset", () => {
+    let s = move(start("P → (P ∧ Q)", ["Q"]), { type: "intro" });
+    expect(s.rooms[1].entry.map((k) => format(k.proof.formula))).toEqual([
+      "Q",
+      "P",
+    ]);
+    s = move(s, { type: "intro" });
+    s = move(s, { type: "use", key: 1 });
+    expect(s.current).toBe(3);
+    expect(() => move(s, { type: "reset" })).toThrow();
+  });
   it("rejects nonexistent keys and rooms without mutating state", () => {
     const s = start("P", ["P"]);
     const before = structuredClone(s);

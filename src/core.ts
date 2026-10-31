@@ -101,6 +101,7 @@ export type Key = { proof: Proof; ribbons: number[] };
 export type Room = {
   goal: Formula;
   keys: Key[];
+  entry: Key[];
   parent?: number;
   children: number[];
   mode?: "∧I" | "→I" | "lemma";
@@ -110,6 +111,7 @@ export type Room = {
 export type State = { rooms: Room[]; current: number; initial: Formula[] };
 export type Action =
   | { type: "intro" }
+  | { type: "reset" }
   | { type: "use" | "split" | "lemma"; key: number }
   | { type: "apply"; key: number; target: number }
   | { type: "visit"; room: number };
@@ -119,15 +121,23 @@ export function start(goal: string, assumptions: string[]): State {
     initial,
     current: 0,
     rooms: [
-      {
-        goal: parse(goal),
-        keys: initial.map((formula) => ({
+      openRoom(
+        parse(goal),
+        initial.map((formula) => ({
           proof: { rule: "assume", formula, inputs: [] },
           ribbons: [],
         })),
-        children: [],
-      },
+      ),
     ],
+  };
+}
+function openRoom(goal: Formula, keys: Key[], parent?: number): Room {
+  return {
+    goal,
+    keys: structuredClone(keys),
+    entry: structuredClone(keys),
+    parent,
+    children: [],
   };
 }
 function add(room: Room, key: Key) {
@@ -145,6 +155,11 @@ export function move(state: State, action: Action): State {
     return s;
   }
   if (r.proof || r.children.length) throw Error("closed room");
+  if (action.type === "reset") {
+    if (r.keys.length === r.entry.length) throw Error("nothing to reset");
+    r.keys = structuredClone(r.entry);
+    return s;
+  }
   const finish = (index: number, proof: Proof) => {
     const room = s.rooms[index];
     room.proof = proof;
@@ -180,12 +195,7 @@ export function move(state: State, action: Action): State {
     if (typeof f === "string") throw Error("atomic door");
     r.mode = f.op === "∧" ? "∧I" : "→I";
     for (const goal of f.op === "∧" ? [f.left, f.right] : [f.right]) {
-      const child: Room = {
-        goal,
-        keys: structuredClone(r.keys),
-        parent: s.current,
-        children: [],
-      };
+      const child = openRoom(goal, r.keys, s.current);
       if (f.op === "→") {
         child.ribbon = s.rooms.length;
         add(child, {
@@ -197,6 +207,7 @@ export function move(state: State, action: Action): State {
           },
           ribbons: [child.ribbon],
         });
+        child.entry = structuredClone(child.keys);
       }
       r.children.push(s.rooms.length);
       s.rooms.push(child);
@@ -242,12 +253,7 @@ export function move(state: State, action: Action): State {
     if (typeof f === "string" || f.op !== "→") throw Error("not socket");
     r.mode = "lemma";
     r.children = [s.rooms.length];
-    s.rooms.push({
-      goal: f.left,
-      keys: structuredClone(r.keys),
-      parent: s.current,
-      children: [],
-    });
+    s.rooms.push(openRoom(f.left, r.keys, s.current));
     s.current = r.children[0];
   }
   return s;

@@ -528,6 +528,33 @@ footer button[aria-pressed="true"] {
   color: #9da3c2;
   margin-top: 28px;
 }
+.credits-link {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  margin-top: 28px;
+  border: 1px solid #9c7024;
+  border-radius: 12px;
+  background: #262b42;
+  color: #d9a441;
+  font: bold 16px system-ui;
+}
+.credit-card {
+  padding: 8px 22px;
+  border: 3px solid #d9a441;
+  border-radius: 14px;
+  background: #f7f1e6;
+  box-shadow: 0 0 0 1px #9c7024;
+}
+.settings .credit-card p {
+  margin: 18px 0;
+  color: #6b5e4b;
+  overflow-wrap: anywhere;
+}
+.credit-card a {
+  color: #9c7024;
+  font-weight: bold;
+}
 .replay-tree {
   overflow: auto;
   height: min(56svh, 560px);

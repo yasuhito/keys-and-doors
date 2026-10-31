@@ -24,7 +24,7 @@ let progress = load(localStorage, stages),
   state: State,
   history: State[] = [],
   selected: number | undefined;
-let screen: "map" | "room" | "replay" | "settings" = "map",
+let screen: "map" | "room" | "replay" | "settings" | "credits" = "map",
   replay: Proof[] = [],
   step = 0,
   playing = false;
@@ -126,7 +126,7 @@ function render() {
   if (screen === "room") renderRoom();
   if (screen === "replay") renderReplay();
   if (screen === "settings") {
-    app.innerHTML = `<header>${button("ui-close", "閉じる", 'id="close"')}<h1>設定</h1></header><div class="settings">${(["captions", "left", "haptics", "reduced"] as const).map((key, i) => `<label><span>${["数式を表示", "左利き用の操作バー", "触覚フィードバック", "動きを減らす"][i]}</span><input type="checkbox" data-setting="${key}" ${progress[key] ? "checked" : ""}></label>`).join("")}<p>鍵を選んで、光る扉や鍵にタップ。鍵をドラッグしても操作できます。</p><p>輪の鍵は空き枠へ。差し込み口のある鍵を2回タップすると、必要な鍵を作る部屋へ進めます。</p><p>カードを長押しすると数式を表示します。リセットは部屋を戻し、長押しするとステージ全体を戻します。</p><p>第1・第2層が遊べます。それ以降の規則は未対応です。</p></div>`;
+    app.innerHTML = `<header>${button("ui-close", "閉じる", 'id="close"')}<h1>設定</h1></header><div class="settings">${(["captions", "left", "haptics", "reduced"] as const).map((key, i) => `<label><span>${["数式を表示", "左利き用の操作バー", "触覚フィードバック", "動きを減らす"][i]}</span><input type="checkbox" data-setting="${key}" ${progress[key] ? "checked" : ""}></label>`).join("")}<p>鍵を選んで、光る扉や鍵にタップ。鍵をドラッグしても操作できます。</p><p>輪の鍵は空き枠へ。差し込み口のある鍵を2回タップすると、必要な鍵を作る部屋へ進めます。</p><p>カードを長押しすると数式を表示します。リセットは部屋を戻し、長押しするとステージ全体を戻します。</p><p>第1・第2層が遊べます。それ以降の規則は未対応です。</p><button id="credits" class="credits-link">クレジット</button></div>`;
     app.querySelectorAll<HTMLInputElement>("[data-setting]").forEach(
       (el) =>
         (el.onchange = () => {
@@ -135,8 +135,21 @@ function render() {
           render();
         }),
     );
+    app.querySelector<HTMLElement>("#credits")!.onclick = () => {
+      screen = "credits";
+      render();
+    };
     app.querySelector<HTMLElement>("#close")!.onclick = () => {
       screen = "map";
+      render();
+    };
+  }
+  if (screen === "credits") {
+    const link = (href: string, text: string) =>
+      `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    app.innerHTML = `<header>${button("ui-close", "設定に戻る", 'id="close"')}<h1>クレジット</h1></header><div class="settings credits"><section class="credit-card"><p>ステージ構成と問題は、木原貴行さんによる「Proof Dungeon」（${link("https://github.com/kihara-logic/proof-dungeon", "kihara-logic/proof-dungeon")}）に基づいています。</p><p>${link("https://x.com/tri_iro/status/2116094777720799282", "原作の告知")}</p><p>原作のコード・文章・物語・画像はコピーしていません。クレジット表記は${link("https://github.com/kihara-logic/proof-dungeon/blob/main/LICENSE", "原作のライセンス")}に従います。</p></section></div>`;
+    app.querySelector<HTMLElement>("#close")!.onclick = () => {
+      screen = "settings";
       render();
     };
   }
@@ -174,10 +187,11 @@ function renderRoom() {
       render();
     }
   };
-  app.querySelector<HTMLElement>("#reset")!.onclick = () => restart(false);
+  app.querySelector<HTMLElement>("#reset")!.onclick = () =>
+    commit({ type: "reset" });
   let resetTimer: ReturnType<typeof setTimeout>;
   app.querySelector("#reset")!.addEventListener("pointerdown", () => {
-    resetTimer = setTimeout(() => restart(true), 450);
+    resetTimer = setTimeout(() => enter(index), 450);
   });
   app
     .querySelector("#reset")!
@@ -236,18 +250,6 @@ function target(el: HTMLElement) {
       render();
     }
   }
-}
-function restart(all: boolean) {
-  if (all) {
-    enter(index);
-    return;
-  }
-  const current = state.current;
-  while (history.length && history.at(-1)!.current === current) {
-    state = history.pop()!;
-  }
-  selected = undefined;
-  render();
 }
 function toggleCaptions() {
   progress.captions = !progress.captions;

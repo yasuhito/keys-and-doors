@@ -1,9 +1,23 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { start, move, solve } from "../src/core";
 import one from "../src/stages/layer-01.json" with { type: "json" };
 import two from "../src/stages/layer-02.json" with { type: "json" };
 const stages = [...one.stages, ...two.stages];
+async function unlock(page: Page, count: number) {
+  const proofs = Object.fromEntries(
+    stages.slice(0, count).map((stage) => {
+      let state = start(stage.tasks[0].goal, stage.tasks[0].assumptions);
+      for (const action of solve(state)!) state = move(state, action);
+      return [stage.id, state.rooms[0].proof];
+    }),
+  );
+  await page.addInitScript((value) => {
+    if (!localStorage.getItem("keys-and-doors:v1"))
+      localStorage.setItem("keys-and-doors:v1", value);
+  }, JSON.stringify({ proofs }));
+  await page.goto("/");
+}
 test("all nine stages through real controls, persistence, replay and locked later layers", async ({
   page,
 }, info) => {
@@ -135,18 +149,7 @@ test("finishing a pair half after opening its sibling via the path lands in an o
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  const proofs = Object.fromEntries(
-    stages.slice(0, 6).map((stage) => {
-      let state = start(stage.tasks[0].goal, stage.tasks[0].assumptions);
-      for (const action of solve(state)!) state = move(state, action);
-      return [stage.id, state.rooms[0].proof];
-    }),
-  );
-  await page.addInitScript((value) => {
-    if (!localStorage.getItem("keys-and-doors:v1"))
-      localStorage.setItem("keys-and-doors:v1", value);
-  }, JSON.stringify({ proofs }));
-  await page.goto("/");
+  await unlock(page, 6);
   await page.locator('[data-stage="6"]').click();
   await page.locator(".goal").click();
   await page.locator('[data-room="2"]').click();
@@ -162,4 +165,77 @@ test("finishing a pair half after opening its sibling via the path lands in an o
   await page.locator(".goal").click();
   await expect(page.locator(".replay-tree")).toBeVisible();
   expect(errors).toEqual([]);
+});
+test("room reset restores the tray from entry even after visiting another room", async ({
+  page,
+}) => {
+  await unlock(page, 1);
+  await page.locator('[data-stage="1"]').click();
+  await page.locator(".goal").click();
+  const keys = page.locator("[data-key]");
+  await page.locator('[data-key="0"]').click();
+  await page.locator(".empty-slot").click();
+  await expect(keys).toHaveCount(3);
+  await page.locator('[data-room="2"]').click();
+  await page.locator('[data-key="0"]').click();
+  await page.locator(".empty-slot").click();
+  await expect(keys).toHaveCount(3);
+  await page.locator('[data-room="1"]').click();
+  await page.locator("#reset").click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await expect(keys).toHaveCount(1);
+  await page.locator('[data-room="2"]').click();
+  await expect(keys).toHaveCount(3);
+  await page.locator('[data-room="1"]').click();
+  await page.locator("#undo").click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await expect(keys).toHaveCount(3);
+  const reset = (await page.locator("#reset").boundingBox())!;
+  await page.mouse.move(reset.x + reset.width / 2, reset.y + reset.height / 2);
+  await page.mouse.down();
+  await expect(page.locator("[data-room]")).toHaveCount(1);
+  await page.mouse.up();
+  await expect(keys).toHaveCount(1);
+  await expect(page.locator("#undo")).toBeDisabled();
+});
+test("credits open from settings, link to the original and return", async ({
+  page,
+}, info) => {
+  await page.goto("/");
+  await page.locator("#settings").click();
+  await page.locator("#credits").click();
+  await expect(page.locator("h1")).toHaveText("クレジット");
+  await expect(page.locator(".credit-card")).toContainText("木原貴行");
+  for (const href of [
+    "https://github.com/kihara-logic/proof-dungeon",
+    "https://x.com/tri_iro/status/2116094777720799282",
+    "https://github.com/kihara-logic/proof-dungeon/blob/main/LICENSE",
+  ]) {
+    const link = page.locator(`.credit-card a[href="${href}"]`);
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("target", "_blank");
+  }
+  await expect(page.locator("body")).toHaveJSProperty(
+    "scrollWidth",
+    info.project.use.viewport!.width,
+  );
+  await mkdir("/tmp/kd/shots", { recursive: true });
+  await page.screenshot({
+    path: `/tmp/kd/shots/${info.project.name}-credit.png`,
+  });
+  await page
+    .context()
+    .route("https://github.com/**", (route) =>
+      route.fulfill({ contentType: "text/html", body: "original" }),
+    );
+  const popup = page.waitForEvent("popup");
+  await page.locator(".credit-card a").first().click();
+  expect((await popup).url()).toContain(
+    "github.com/kihara-logic/proof-dungeon",
+  );
+  await (await popup).close();
+  await page.locator("#close").click();
+  await expect(page.locator("h1")).toHaveText("設定");
+  await page.locator("#close").click();
+  await expect(page.locator('[data-stage="0"]')).toBeVisible();
 });

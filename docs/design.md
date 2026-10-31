@@ -45,7 +45,7 @@ Each atom has a fixed colour **and** a fixed silhouette, so the four atoms stay 
 | R | Leaf: a pointed leaf with a stem stub | `#1E9A6C` | `#0F6A48` | `atom-leaf.svg` |
 | S | Star: five sharp points | `#C2509E` | `#8A2F6E` | `atom-star.svg` |
 
-Each silhouette is **one closed outline** on a 48 × 48 grid (`outlines` in `src/picture.ts`, the same path data as the atom icons). A key's thickness, its hole, its halo, and its fit flash are all drawn from that one path, so they can never disagree. Rules for the outlines:
+Each silhouette is **one closed outline** on a 48 × 48 grid (`outlines` in `src/picture.ts`, the same path data as the atom icons). A key's thickness, its hole, and its halo are all drawn from that one path, so they can never disagree. Rules for the outlines:
 
 - No separate strokes and no holes inside the outline: anything that is not part of the outline would not be part of the hole either. The sun's rays are part of its outline; the leaf's stem is a solid stub, not a line.
 - The silhouettes differ in kind (disc with eight slim rays, crescent, leaf, five sharp points), not just in size. Every one stays recognisable at about 16 px, the size of a nested atom in a tray key on a phone.

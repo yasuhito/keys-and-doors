@@ -146,23 +146,27 @@ function add(room: Room, key: Key) {
   if (!room.keys.some((k) => equal(k.proof.formula, key.proof.formula)))
     room.keys.push(key);
 }
+export function visitable(state: State, index: number): boolean {
+  const target = state.rooms[index];
+  if (
+    !target ||
+    target.proof ||
+    (target.children.length && target.mode !== "∧I")
+  )
+    return false;
+  for (
+    let parent = target.parent;
+    parent !== undefined;
+    parent = state.rooms[parent].parent
+  )
+    if (state.rooms[parent].proof) return false;
+  return true;
+}
 export function move(state: State, action: Action): State {
   const s = structuredClone(state);
   const r = s.rooms[s.current];
   if (action.type === "visit") {
-    const target = s.rooms[action.room];
-    if (
-      !target ||
-      target.proof ||
-      (target.children.length && target.mode !== "∧I")
-    )
-      throw Error("not open");
-    for (
-      let parent = target.parent;
-      parent !== undefined;
-      parent = s.rooms[parent].parent
-    )
-      if (s.rooms[parent].proof) throw Error("closed ancestor");
+    if (!visitable(s, action.room)) throw Error("not open");
     s.current = action.room;
     return s;
   }

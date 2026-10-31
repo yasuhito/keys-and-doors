@@ -365,7 +365,7 @@ The result of an if-then gains its thickness during delivery (6.2). A borrowed k
 
 ### 6.2 Fitting a key into an if-then key (if-elim)
 
-![If-elim storyboard](mockups/fit.svg)
+The runtime motion is `fitMotion()` in `src/motion.ts`, which follows the table below.
 
 The player drops key A on an if-then key A → B.
 
@@ -385,7 +385,7 @@ Total: 1460 ms. If key B is already in the tray, the Delivered copy moves to tha
 
 ### 6.3 Filling a pair door (and-intro)
 
-![Pair door storyboard](mockups/pair.svg)
+The runtime motion is `fitMotion()` in `src/motion.ts`, which follows the timings below.
 
 Under the hood, filling a hole is and-intro followed by assumption use in that half's room; the view stays on the pair door.
 

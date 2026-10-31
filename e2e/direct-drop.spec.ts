@@ -211,3 +211,29 @@ test("a half seated on return plays its own haptic only once", async ({
     await page.evaluate(() => (window as unknown as { buzzes: [] }).buzzes),
   ).toEqual([25]);
 });
+
+test("the path chip returns to an unfinished pair door, where the other half can be filled", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await open(page);
+  await page.locator('.goal [data-drop="L"]').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await expect(page.locator('[data-room="0"]')).toBeEnabled();
+  await page.locator('[data-room="0"]').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "0");
+  await page.locator('[data-key="1"]').click();
+  await page.locator('.goal [data-drop="R"]').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "0");
+  await expect(
+    page.locator('.goal [data-part="R"] .seated').first(),
+  ).toBeAttached();
+  await expect(page.locator('[data-room="2"]')).toBeDisabled();
+  await page.locator('[data-room="1"]').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await page.locator('[data-key="0"]').click();
+  await page.locator(".goal").click();
+  await expect(page.locator(".replay-tree")).toBeVisible();
+  expect(errors).toEqual([]);
+});

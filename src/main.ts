@@ -7,6 +7,7 @@ import {
   parse,
   format,
   equal,
+  visitable,
   type State,
   type Action,
   type Formula,
@@ -397,7 +398,7 @@ function renderRoom() {
     selected === undefined
       ? undefined
       : preview({ type: "split", key: selected });
-  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door", true, filled(r))}${doorPreview()}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
+  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${visitable(state, i) ? "" : "disabled"}>${card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door", true, filled(r))}${doorPreview()}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
     .map((k, i) => {
       const forms =
         selected === undefined
@@ -493,18 +494,8 @@ function highlightHoles(key: number) {
       const f =
         target.dataset.drop === "door"
           ? state.rooms[state.current].goal
-          : target.dataset.drop === "L" || target.dataset.drop === "R"
-            ? typeof state.rooms[state.current].goal !== "string"
-              ? target.dataset.drop === "L"
-                ? (state.rooms[state.current].goal as Exclude<Formula, string>)
-                    .left
-                : (state.rooms[state.current].goal as Exclude<Formula, string>)
-                    .right
-              : undefined
-            : target.dataset.key !== undefined
-              ? state.rooms[state.current].keys[Number(target.dataset.key)]
-                  .proof.formula
-              : undefined;
+          : state.rooms[state.current].keys[Number(target.dataset.key)].proof
+              .formula;
       target
         .querySelectorAll<SVGElement>(".glow[data-path]")
         .forEach((halo) => {

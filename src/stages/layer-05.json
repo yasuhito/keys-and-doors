@@ -1,0 +1,100 @@
+{
+  "id": "layer-05",
+  "stages": [
+    {
+      "id": "stage-020",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬¬P → P",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-021",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P ∨ ¬P",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-022",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬P ∨ Q",
+          "assumptions": [
+            "P → Q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-023",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P → Q",
+          "assumptions": [
+            "¬Q → ¬P"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-024",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P",
+          "assumptions": [
+            "P ∨ ¬P",
+            "¬¬P"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-025",
+      "kind": "prove",
+      "logic": "intuitionistic",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "P ∨ ¬P",
+          "assumptions": [
+            "¬¬(P ∨ ¬P) → (P ∨ ¬P)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-026",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬P ∨ ¬Q",
+          "assumptions": [
+            "¬(P ∧ Q)"
+          ]
+        }
+      ]
+    }
+  ]
+}

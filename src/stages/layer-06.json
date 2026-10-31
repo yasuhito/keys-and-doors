@@ -1,0 +1,85 @@
+{
+  "id": "layer-06",
+  "stages": [
+    {
+      "id": "stage-027",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "Q → P",
+          "assumptions": [
+            "P → Q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-028",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬P → ¬Q",
+          "assumptions": [
+            "P → Q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-029",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬(P ∧ Q)",
+          "assumptions": [
+            "P ∨ Q"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-030",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬P ∧ ¬Q",
+          "assumptions": [
+            "¬(P ∧ Q)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-031",
+      "kind": "classify",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(¬P → Q) → (P ∨ Q)",
+          "assumptions": []
+        },
+        {
+          "goal": "(P → Q) → (Q → P)",
+          "assumptions": []
+        },
+        {
+          "goal": "(P → Q) ∨ (Q → P)",
+          "assumptions": []
+        },
+        {
+          "goal": "((P → Q) → P) → P",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

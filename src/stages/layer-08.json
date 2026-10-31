@@ -1,0 +1,101 @@
+{
+  "id": "layer-08",
+  "stages": [
+    {
+      "id": "stage-037",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.P(x)",
+          "assumptions": [
+            "∀x.(P(x) ∧ Q(x))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-038",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(∀x.P(x)) → (∀y.P(y))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-039",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.Q(x)",
+          "assumptions": [
+            "∀x.(P(x) → Q(x))",
+            "∀x.P(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-040",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(P(x) → R(x))",
+          "assumptions": [
+            "∀x.(P(x) → Q(x))",
+            "∀x.(Q(x) → R(x))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-041",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "A → ∀x.B(x)",
+          "assumptions": [
+            "∀z.(A → B(z))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-042",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀z.(A → B(z))",
+          "assumptions": [
+            "A → ∀x.B(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-043",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(∀x.(P(x) ∧ Q(x))) → ((∀x.P(x)) ∧ (∀x.Q(x)))",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

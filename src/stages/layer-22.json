@@ -1,0 +1,91 @@
+{
+  "id": "layer-22",
+  "stages": [
+    {
+      "id": "stage-115",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "¬∃y.∀x.((K(y,x) → ¬K(x,x)) ∧ (¬K(x,x) → K(y,x)))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-116",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀y.∃x.¬((D(y,x) → ¬D(x,x)) ∧ (¬D(x,x) → D(y,x)))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-117",
+      "kind": "countermodel",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "⊥",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)",
+            "∀x.(i(x) * x = e)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-118",
+      "kind": "classify",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x * y = y * x)",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)",
+            "∀x.(i(x) * x = e)"
+          ]
+        },
+        {
+          "goal": "¬∀x.∀y.(x * y = y * x)",
+          "assumptions": [
+            "∀x.∀y.∀z.((x * y) * z = x * (y * z))",
+            "∀x.(e * x = x)",
+            "∀x.(i(x) * x = e)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-119",
+      "kind": "classify",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(0 + x = x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        },
+        {
+          "goal": "¬∀x.(0 + x = x)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    }
+  ]
+}

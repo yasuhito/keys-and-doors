@@ -1,0 +1,57 @@
+{
+  "id": "layer-18",
+  "stages": [
+    {
+      "id": "stage-092",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.(0 * x = 0)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))",
+            "∀x.(x * 0 = 0)",
+            "∀x.∀y.(x * s(y) = x * y + x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-093",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.∀z.((x + y) + z = x + (y + z))",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-094",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": true,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.∀z.(x * (y + z) = x * y + x * z)",
+          "assumptions": [
+            "∀x.(x + 0 = x)",
+            "∀x.∀y.(x + s(y) = s(x + y))",
+            "∀x.(x * 0 = 0)",
+            "∀x.∀y.(x * s(y) = x * y + x)"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.∀z.((x + y) + z = x + (y + z))"
+      ]
+    }
+  ]
+}

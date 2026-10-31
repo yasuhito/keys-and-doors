@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <title>Key (an assumption you hold)</title>
+  <path d="M27 21h17.5v6H41v6h-5v-6h-3v4.5h-4.5V27H27Z" fill="#D9A441" stroke="#9C7024" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="16" cy="24" r="13" fill="#D9A441" stroke="#9C7024" stroke-width="2"/>
+  <circle cx="16" cy="24" r="8.5" fill="#F7F1E6" stroke="#9C7024" stroke-width="1.5"/>
+  <circle cx="16" cy="24" r="4" fill="#B5A890"/>
+</svg>

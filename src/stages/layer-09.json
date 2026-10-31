@@ -1,0 +1,131 @@
+{
+  "id": "layer-09",
+  "stages": [
+    {
+      "id": "stage-044",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.P(x)",
+          "assumptions": [
+            "∃x.(P(x) ∧ Q(x))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-045",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.P(x)",
+          "assumptions": [
+            "P(a) ∧ P(b)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-046",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.(A ∧ B(x))",
+          "assumptions": [
+            "A ∧ ∃x.B(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-047",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "A ∧ ∃x.B(x)",
+          "assumptions": [
+            "∃x.(A ∧ B(x))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-048",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(∃x.A(x)) → B",
+          "assumptions": [
+            "∀z.(A(z) → B)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-049",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀z.(A(z) → B)",
+          "assumptions": [
+            "(∃x.A(x)) → B"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-050",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.¬P(x)",
+          "assumptions": [
+            "¬∃x.P(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-051",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∃y.R(x,y)",
+          "assumptions": [
+            "∃y.∀x.R(x,y)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-052",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.(M(x) → ∃y.(C(y) ∧ F(x,y)))",
+          "assumptions": [
+            "∃y.(C(y) ∧ ∀x.(M(x) → F(x,y)))"
+          ]
+        }
+      ]
+    }
+  ]
+}

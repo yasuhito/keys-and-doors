@@ -1,0 +1,87 @@
+{
+  "id": "layer-10",
+  "stages": [
+    {
+      "id": "stage-053",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "K(p,p)",
+          "assumptions": [
+            "∀x.(¬K(x,x) → K(p,x))"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-054",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.P(x)",
+          "assumptions": [
+            "¬∃x.¬P(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-055",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.¬P(x)",
+          "assumptions": [
+            "¬∀x.P(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-056",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.P(x)",
+          "assumptions": [
+            "¬∀x.¬P(x)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-057",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(∀x.P(x)) ∨ Q",
+          "assumptions": [
+            "∀x.(P(x) ∨ Q)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-058",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x.(P(x) → ∀y.P(y))",
+          "assumptions": []
+        }
+      ]
+    }
+  ]
+}

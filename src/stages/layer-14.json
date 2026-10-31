@@ -1,0 +1,89 @@
+{
+  "id": "layer-14",
+  "stages": [
+    {
+      "id": "stage-076",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x = y → y = x)",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-077",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.∀z.(x = y → (y = z → x = z))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-078",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(x = y → f(x) = f(y))",
+          "assumptions": []
+        }
+      ]
+    },
+    {
+      "id": "stage-079",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "a = c",
+          "assumptions": [
+            "a = b",
+            "c = b"
+          ]
+        }
+      ],
+      "lemmas": [
+        "∀x.∀y.(x = y → y = x)"
+      ]
+    },
+    {
+      "id": "stage-080",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x.∀y.(g(f(x)) = g(f(y)) → x = y)",
+          "assumptions": [
+            "∀x.∀y.(f(x) = f(y) → x = y)",
+            "∀x.∀y.(g(x) = g(y) → x = y)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stage-081",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀z.∃x.(g(f(x)) = z)",
+          "assumptions": [
+            "∀y.∃x.(f(x) = y)",
+            "∀z.∃y.(g(y) = z)"
+          ]
+        }
+      ]
+    }
+  ]
+}

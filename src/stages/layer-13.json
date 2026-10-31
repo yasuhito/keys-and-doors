@@ -1,0 +1,122 @@
+{
+  "id": "layer-13",
+  "stages": [
+    {
+      "id": "stage-069",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "A ∩ B ⊆ A",
+          "assumptions": []
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    },
+    {
+      "id": "stage-070",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "A ⊆ C",
+          "assumptions": [
+            "A ⊆ B",
+            "B ⊆ C"
+          ]
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    },
+    {
+      "id": "stage-071",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "A ∩ C ⊆ B ∩ C",
+          "assumptions": [
+            "A ⊆ B"
+          ]
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    },
+    {
+      "id": "stage-072",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "S ∩ P ≠ ∅",
+          "assumptions": [
+            "M ⊆ P",
+            "S ∩ M ≠ ∅"
+          ]
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    },
+    {
+      "id": "stage-073",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "(A ∩ B)ᶜ ⊆ Aᶜ ∪ Bᶜ",
+          "assumptions": []
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    },
+    {
+      "id": "stage-074",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∀x∈A.¬P(x)",
+          "assumptions": [
+            "¬∃x∈A.P(x)"
+          ]
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    },
+    {
+      "id": "stage-075",
+      "kind": "prove",
+      "logic": "classical",
+      "induction": false,
+      "tasks": [
+        {
+          "goal": "∃x∈A.¬P(x)",
+          "assumptions": [
+            "¬∀x∈A.P(x)"
+          ]
+        }
+      ],
+      "definitions": [
+        "sets"
+      ]
+    }
+  ]
+}

@@ -44,7 +44,7 @@ test("all nine stages through real controls, persistence, replay and locked late
     if (i === 0) {
       // Wrong match stays in the same room, with the key still selected.
       await page.locator('[data-key="1"]').click();
-      await page.locator(".goal").click();
+      await page.locator('.goal [data-drop="L"]').click();
       await expect(page.locator('[data-key="1"]')).toHaveAttribute(
         "aria-pressed",
         "true",

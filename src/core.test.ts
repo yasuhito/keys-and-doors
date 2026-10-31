@@ -20,6 +20,81 @@ describe("formula grammar", () => {
     expect(() => parse(text)).toThrow(),
   );
 });
+describe("direct pair filling", () => {
+  it.each(["L", "R"] as const)(
+    "fills %s first without leaving the pair and checks its proof",
+    (side) => {
+      const initial = start("P ∧ Q", ["P", "Q"]);
+      const snapshot = structuredClone(initial);
+      const first = move(initial, {
+        type: "fill",
+        key: side === "L" ? 0 : 1,
+        side,
+      });
+      expect(initial).toEqual(snapshot);
+      expect(first.current).toBe(0);
+      expect(first.rooms[0].proof).toBeUndefined();
+      expect(first.rooms[0].children).toHaveLength(2);
+      expect(first.rooms[side === "L" ? 1 : 2].proof?.rule).toBe("assume");
+      const last = move(first, {
+        type: "fill",
+        key: side === "L" ? 1 : 0,
+        side: side === "L" ? "R" : "L",
+      });
+      expect(last.rooms[0].proof?.rule).toBe("∧I");
+      expect(last.rooms[0].keys).toEqual(initial.rooms[0].keys);
+      expect(checkProof(last.rooms[0].proof!, initial.initial)).toBe(true);
+    },
+  );
+  it("rejects the wrong or occupied half, including equal-shaped holes", () => {
+    const s = start("P ∧ Q", ["P"]);
+    expect(() => move(s, { type: "fill", key: 0, side: "R" })).toThrow();
+    expect(() =>
+      move(start("P", ["P"]), { type: "fill", key: 0, side: "L" }),
+    ).toThrow();
+    let n = move(start("P ∧ P", ["P"]), { type: "fill", key: 0, side: "R" });
+    expect(() => move(n, { type: "fill", key: 0, side: "R" })).toThrow();
+    n = move(n, { type: "fill", key: 0, side: "L" });
+    expect(checkProof(n.rooms[0].proof!, n.initial)).toBe(true);
+  });
+  it("allows an unfinished pair to be revisited and its other half entered without new rooms", () => {
+    let s = move(start("P ∧ Q", ["P", "Q"]), {
+      type: "fill",
+      key: 0,
+      side: "L",
+    });
+    s = move(s, { type: "intro", side: "R" });
+    expect(s.current).toBe(2);
+    s = move(s, { type: "visit", room: 0 });
+    s = move(s, { type: "intro" });
+    expect(s.rooms).toHaveLength(3);
+    s = move(s, { type: "use", key: 1 });
+    expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
+  });
+  it("can fill an expanded half as a whole without reopening its abandoned descendants", () => {
+    let s = move(start("(P ∧ Q) ∧ R", ["P ∧ Q", "R"]), {
+      type: "intro",
+      side: "L",
+    });
+    s = move(s, { type: "intro" });
+    const abandoned = s.current;
+    s = move(s, { type: "visit", room: 0 });
+    s = move(s, { type: "fill", key: 0, side: "L" });
+    expect(() => move(s, { type: "visit", room: abandoned })).toThrow();
+    s = move(s, { type: "fill", key: 1, side: "R" });
+    expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
+  });
+  it("accepts compound halves and discharges borrowed keys without leakage", () => {
+    let s = move(start("P → ((P ∧ Q) ∧ P)", ["P ∧ Q"]), { type: "intro" });
+    const ribbon = s.rooms[1].keys[1].ribbons;
+    s = move(s, { type: "fill", key: 1, side: "R" });
+    expect(s.current).toBe(1);
+    expect(s.rooms[1].keys[1].ribbons).toEqual(ribbon);
+    s = move(s, { type: "fill", key: 0, side: "L" });
+    expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
+    expect(s.rooms[0].keys).toHaveLength(1);
+  });
+});
 describe("five rules", () => {
   it("assumption use matches exactly and never consumes keys", () => {
     const s = start("P", ["Q", "P"]);

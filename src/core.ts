@@ -110,10 +110,11 @@ export type Room = {
 };
 export type State = { rooms: Room[]; current: number; initial: Formula[] };
 export type Action =
-  | { type: "intro" }
+  | { type: "intro"; side?: "L" | "R" }
   | { type: "reset" }
   | { type: "use" | "split" | "lemma"; key: number }
   | { type: "apply"; key: number; target: number }
+  | { type: "fill"; key: number; side: "L" | "R" }
   | { type: "visit"; room: number };
 export function start(goal: string, assumptions: string[]): State {
   const initial = assumptions.map(parse);
@@ -149,12 +150,23 @@ export function move(state: State, action: Action): State {
   const r = s.rooms[s.current];
   if (action.type === "visit") {
     const target = s.rooms[action.room];
-    if (!target || target.proof || target.children.length)
+    if (
+      !target ||
+      target.proof ||
+      (target.children.length && target.mode !== "∧I")
+    )
       throw Error("not open");
+    for (
+      let parent = target.parent;
+      parent !== undefined;
+      parent = s.rooms[parent].parent
+    )
+      if (s.rooms[parent].proof) throw Error("closed ancestor");
     s.current = action.room;
     return s;
   }
-  if (r.proof || r.children.length) throw Error("closed room");
+  if (r.proof || (r.children.length && r.mode !== "∧I"))
+    throw Error("closed room");
   if (action.type === "reset") {
     if (r.keys.length === r.entry.length) throw Error("nothing to reset");
     r.keys = structuredClone(r.entry);
@@ -192,6 +204,15 @@ export function move(state: State, action: Action): State {
   };
   if (action.type === "intro") {
     const f = r.goal;
+    if (r.children.length) {
+      const child = action.side
+        ? r.children[action.side === "L" ? 0 : 1]
+        : r.children.find((c) => !s.rooms[c].proof);
+      if (child === undefined || s.rooms[child].proof)
+        throw Error("closed half");
+      s.current = child;
+      return s;
+    }
     if (typeof f === "string") throw Error("atomic door");
     r.mode = f.op === "∧" ? "∧I" : "→I";
     for (const goal of f.op === "∧" ? [f.left, f.right] : [f.right]) {
@@ -212,12 +233,30 @@ export function move(state: State, action: Action): State {
       r.children.push(s.rooms.length);
       s.rooms.push(child);
     }
-    s.current = r.children[0];
+    s.current = r.children[action.side === "R" && f.op === "∧" ? 1 : 0];
     return s;
   }
   const key = r.keys[action.key];
   if (!key) throw Error("missing key");
   const f = key.proof.formula;
+  if (action.type === "fill") {
+    const goal = r.goal;
+    if (typeof goal === "string" || goal.op !== "∧")
+      throw Error("not pair door");
+    if (!equal(f, action.side === "L" ? goal.left : goal.right))
+      throw Error("mismatch");
+    if (!r.children.length) {
+      r.mode = "∧I";
+      for (const half of [goal.left, goal.right]) {
+        r.children.push(s.rooms.length);
+        s.rooms.push(openRoom(half, r.keys, s.current));
+      }
+    }
+    const child = r.children[action.side === "L" ? 0 : 1];
+    if (s.rooms[child].proof) throw Error("closed half");
+    finish(child, key.proof);
+    if (!r.proof) s.current = state.current;
+  }
   if (action.type === "use") {
     if (!equal(f, r.goal)) throw Error("mismatch");
     finish(s.current, key.proof);
@@ -250,6 +289,7 @@ export function move(state: State, action: Action): State {
     });
   }
   if (action.type === "lemma") {
+    if (r.children.length) throw Error("pair already open");
     if (typeof f === "string" || f.op !== "→") throw Error("not socket");
     r.mode = "lemma";
     r.children = [s.rooms.length];

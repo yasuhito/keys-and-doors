@@ -144,7 +144,7 @@ export function picture(
       clamp(1, size * 0.05, 3.5),
       p.hole,
     );
-    return `<g class="cut">${glow && !full ? `<g class="glow" data-path="${path}" ${at(0)}>${halo}</g>` : ""}${cut}${full ? `<g class="seated">${own(0.9)}</g>` : ""}</g>`;
+    return `<g class="cut" data-part="${path}">${glow && !full ? `<g class="glow" data-path="${path}" ${at(0)}>${halo}</g>` : ""}${cut}${full ? `<g class="seated">${own(0.9)}</g>` : ""}</g>`;
   }
   function tile(
     c: Formula,
@@ -158,8 +158,10 @@ export function picture(
   ) {
     const r = Math.min(b.w, b.h);
     return (
+      `<g data-part="${path}">` +
       rect(b, r * 0.12, p.plate[depth % 2], p.edge) +
-      draw(c, inset(b, r * 0.07), depth, mode, p, top, path, full)
+      draw(c, inset(b, r * 0.07), depth, mode, p, top, path, full) +
+      `</g>`
     );
   }
   function draw(
@@ -246,7 +248,7 @@ export function picture(
     const arrow = `<path class="arrow" d="M${n(-len / 2)} 0H${n(len / 2)}M${n(len / 2 - head)} ${n(-head)}L${n(len / 2)} 0L${n(len / 2 - head)} ${n(head)}" transform="translate(${n(cx)} ${n(cy)}) rotate(${horizontal ? 0 : 90})" fill="none" stroke="${full ? lit : p.arrow}" stroke-width="${n(clamp(2, short * 0.035, 4) * (full ? 1.25 : 1))}" stroke-linecap="round" stroke-linejoin="round"/>`;
     // Until its slot is filled, what an if-then gives is drawn grey.
     const result = full ? have : pending;
-    return `<g class="slot">${draw(f.left, first, depth + 1, "hole", p, top && depth === 0 && mode === "have", path + "S", full)}</g>${arrow}<g class="result">${
+    return `<g class="slot" data-part="${path}S">${draw(f.left, first, depth + 1, "hole", p, top && depth === 0 && mode === "have", path + "S", full)}</g>${arrow}<g class="result" data-part="${path}T">${
       typeof f.right === "string"
         ? draw(
             f.right,

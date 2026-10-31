@@ -6,12 +6,13 @@ import {
   solve,
   parse,
   format,
+  equal,
   type State,
   type Action,
   type Formula,
   type Proof,
 } from "./core";
-import { card, escape, icon, spoken } from "./picture";
+import { card, escape, icon, picture, spoken } from "./picture";
 import { load, save } from "./progress";
 import first from "./stages/layer-01.json";
 import second from "./stages/layer-02.json";
@@ -57,6 +58,12 @@ function enter(i: number) {
 function commit(action: Action) {
   try {
     const next = move(state, action);
+    const rootGoal = state.rooms[0].goal;
+    const doorBox = app.querySelector(".goal .object")?.getBoundingClientRect();
+    const fitted =
+      action.type === "apply"
+        ? state.rooms[state.current].keys[action.target].proof.formula
+        : undefined;
     history.push(state);
     state = next;
     selected = undefined;
@@ -65,8 +72,88 @@ function commit(action: Action) {
       progress.proofs[stages[index].id] = state.rooms[0].proof;
       persist();
       buzz([40, 40, 80]);
-      showReplay(state.rooms[0].proof);
-    } else render();
+      const proof = state.rooms[0].proof;
+      if (doorBox && typeof rootGoal !== "string" && rootGoal.op === "→") {
+        const room = app.querySelector<HTMLElement>(".room");
+        if (room) room.inert = true;
+        const door = document.createElement("span");
+        door.className = "door-fit";
+        door.style.left = `${doorBox.x}px`;
+        door.style.top = `${doorBox.y}px`;
+        door.innerHTML = card(rootGoal, "door", true, ["S"]);
+        door
+          .querySelector(".object")!
+          .insertAdjacentHTML(
+            "beforeend",
+            `<span class="fit-animation"><span class="obtained">${picture(rootGoal, 184, 137, true, [""])}</span></span>`,
+          );
+        app.append(door);
+        setTimeout(
+          () => {
+            door.remove();
+            showReplay(proof);
+          },
+          reduced() ? 150 : 1120,
+        );
+      } else showReplay(proof);
+    } else {
+      render();
+      if (fitted && action.type === "apply") {
+        const target = app.querySelector<HTMLElement>(
+          `[data-key="${action.target}"] .object`,
+        );
+        if (target) {
+          const effect = document.createElement("span");
+          effect.className = "fit-animation";
+          effect.innerHTML = `<span class="seating">${picture(fitted, 88, 66, false, ["S"])}</span><span class="obtained">${picture(fitted, 88, 66, false, [""])}</span>`;
+          target.append(effect);
+          if (!reduced() && typeof fitted !== "string") {
+            const from = effect
+              .querySelector(".obtained .result")!
+              .getBoundingClientRect();
+            const resultKey = state.rooms[state.current].keys.findIndex((k) =>
+              equal(k.proof.formula, fitted.right),
+            );
+            const destination = app.querySelector<HTMLElement>(
+              `[data-key="${resultKey}"] .object`,
+            );
+            if (destination) {
+              const to = destination.getBoundingClientRect();
+              const flight = document.createElement("span");
+              flight.className = "key-flight";
+              flight.innerHTML = card(fitted.right);
+              document.body.append(flight);
+              const animation = flight.animate(
+                [
+                  {
+                    left: `${from.x}px`,
+                    top: `${from.y}px`,
+                    width: `${from.width}px`,
+                    height: `${from.height}px`,
+                    opacity: 0.8,
+                  },
+                  {
+                    left: `${to.x}px`,
+                    top: `${to.y}px`,
+                    width: `${to.width}px`,
+                    height: `${to.height}px`,
+                    opacity: 1,
+                  },
+                ],
+                {
+                  delay: 820,
+                  duration: 300,
+                  easing: "ease-in-out",
+                  fill: "none",
+                },
+              );
+              animation.finished.finally(() => flight.remove());
+            }
+          }
+          setTimeout(() => effect.remove(), reduced() ? 150 : 1120);
+        }
+      }
+    }
   } catch {
     app.querySelector(".room")?.classList.add("reject");
     buzz([15, 40, 15]);
@@ -104,7 +191,7 @@ function render() {
               const i = stages.findIndex((s) => s.id === stage.id),
                 active = i >= 0 && unlocked(i),
                 proof = progress.proofs[stage.id];
-              return `<div class="stage ${active ? "available" : "locked"} ${proof ? "cleared" : ""}"><button class="stage-door" data-stage="${i}" aria-label="${escape(stage.id)}${active ? "" : " ロック中"}" ${active ? "" : "disabled"}>${i >= 0 ? card(parse(stage.tasks[0].goal), "door") : `<span class="object door reserved">${icon("ui-lock")}</span>`}${pips(layer.stages.indexOf(stage) + 1)}</button>${proof ? button("ui-check", `${escape(stage.id)} 証明を再生`, `data-rewatch="${i}" class="badge"`) : !active ? `<span class="lock">${icon("ui-lock")}</span>` : ""}</div>`;
+              return `<div class="stage ${active ? "available" : "locked"} ${proof ? "cleared" : ""}"><button class="stage-door" data-stage="${i}" aria-label="${escape(stage.id)}${active ? "" : " ロック中"}" ${active ? "" : "disabled"}>${i >= 0 ? card(parse(stage.tasks[0].goal), "door", true, proof ? [""] : []) : `<span class="object door reserved">${icon("ui-lock")}</span>`}${pips(layer.stages.indexOf(stage) + 1)}</button>${proof ? button("ui-check", `${escape(stage.id)} 証明を再生`, `data-rewatch="${i}" class="badge"`) : !active ? `<span class="lock">${icon("ui-lock")}</span>` : ""}</div>`;
             })
             .join("")}</div></section>`,
       )
@@ -127,7 +214,7 @@ function render() {
   if (screen === "room") renderRoom();
   if (screen === "replay") renderReplay();
   if (screen === "settings") {
-    app.innerHTML = `<header>${button("ui-close", "閉じる", 'id="close"')}<h1>設定</h1></header><div class="settings">${(["captions", "left", "haptics", "reduced"] as const).map((key, i) => `<label><span>${["数式を表示", "左利き用の操作バー", "触覚フィードバック", "動きを減らす"][i]}</span><input type="checkbox" data-setting="${key}" ${progress[key] ? "checked" : ""}></label>`).join("")}<p>鍵を選んで、光る扉や鍵にタップ。鍵をドラッグしても操作できます。</p><p>輪の鍵は空き枠へ。差し込み口のある鍵を2回タップすると、必要な鍵を作る部屋へ進めます。</p><p>カードを長押しすると数式を表示します。リセットは部屋を戻し、長押しするとステージ全体を戻します。</p><p>第1・第2層が遊べます。それ以降の規則は未対応です。</p><button id="credits" class="credits-link">クレジット</button></div>`;
+    app.innerHTML = `<header>${button("ui-close", "閉じる", 'id="close"')}<h1>設定</h1></header><div class="settings">${(["captions", "left", "haptics", "reduced"] as const).map((key, i) => `<label><span>${["数式を表示", "左利き用の操作バー", "触覚フィードバック", "動きを減らす"][i]}</span><input type="checkbox" data-setting="${key}" ${progress[key] ? "checked" : ""}></label>`).join("")}<p>鍵を選んで、光る扉や鍵にタップ。鍵をドラッグしても操作できます。</p><p>棒でつながった鍵は空き枠へ。穴のある鍵を2回タップすると、穴にはまる鍵を作る部屋へ進めます。</p><p>カードを長押しすると数式を表示します。リセットは部屋を戻し、長押しするとステージ全体を戻します。</p><p>第1・第2層が遊べます。それ以降の規則は未対応です。</p><button id="credits" class="credits-link">クレジット</button></div>`;
     app.querySelectorAll<HTMLInputElement>("[data-setting]").forEach(
       (el) =>
         (el.onchange = () => {
@@ -165,17 +252,17 @@ function renderRoom() {
     selected === undefined
       ? undefined
       : preview({ type: "split", key: selected });
-  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node")}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door")}${ghosts(usePreview)}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
+  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door")}${ghosts(usePreview)}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
     .map((k, i) => {
       const forms =
         selected === undefined
           ? undefined
           : preview({ type: "apply", key: selected, target: i });
-      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${ghosts(forms)}</button>`;
+      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${forms ? fitPreview(k.proof.formula) : ""}${ghosts(forms)}</button>`;
     })
     .join(
       "",
-    )}<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: 輪の鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button></div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
+    )}<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: つながった鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button></div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
   app.querySelector<HTMLElement>("#map")!.onclick = () => {
     selected = undefined;
     screen = "map";
@@ -222,7 +309,39 @@ function renderRoom() {
       render();
     }
   };
+  if (selected !== undefined) highlightHoles(selected);
   bindGestures();
+}
+function highlightHoles(key: number) {
+  const held = state.rooms[state.current].keys[key].proof.formula;
+  app.querySelectorAll<HTMLElement>("[data-drop]").forEach((target) => {
+    const f =
+      target.dataset.drop === "door"
+        ? state.rooms[state.current].goal
+        : target.dataset.key !== undefined
+          ? state.rooms[state.current].keys[Number(target.dataset.key)].proof
+              .formula
+          : undefined;
+    target.querySelectorAll<SVGElement>(".glow[data-path]").forEach((halo) => {
+      let part = f;
+      for (const step of halo.dataset.path ?? "") {
+        if (part && typeof part !== "string")
+          part = step === "L" || step === "S" ? part.left : part.right;
+      }
+      halo.classList.toggle("matching", !!part && equal(part, held));
+    });
+  });
+}
+// A pair door shows each half it has already opened with its key seated.
+function filled(room: State["rooms"][number]) {
+  if (room.proof) return [""];
+  if (room.mode !== "∧I") return [];
+  return room.children.flatMap((c, i) =>
+    state.rooms[c].proof ? [i ? "R" : "L"] : [],
+  );
+}
+function fitPreview(f: Formula) {
+  return `<span class="fit-preview">${picture(f, 88, 66, false, [""])}</span>`;
 }
 function ribbon(ids: number[]) {
   return ids.length
@@ -350,8 +469,16 @@ function bindGestures() {
           if (a && preview(a)) {
             t.classList.add("valid");
             t.insertAdjacentHTML("beforeend", ghosts(preview(a)));
+            if (a.type === "apply")
+              t.insertAdjacentHTML(
+                "beforeend",
+                fitPreview(
+                  state.rooms[state.current].keys[a.target].proof.formula,
+                ),
+              );
           }
         });
+        highlightHoles(selected);
         el.classList.add("drag-source");
         floating = document.createElement("div");
         floating.className = "drag-copy";
@@ -401,7 +528,7 @@ function bindGestures() {
       render();
     };
     if (el.dataset.key !== undefined) {
-      // A socket's auxiliary goal can be entered with keyboard or a second quick tap.
+      // A room that makes the key for an if-then slot opens with keyboard or a second quick tap.
       el.ondblclick = () => {
         const key = Number(el.dataset.key);
         const f = state.rooms[state.current].keys[key].proof.formula;

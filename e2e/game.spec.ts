@@ -130,3 +130,36 @@ test("drag copy, long press, undo and restart", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
 });
+test("finishing a pair half after opening its sibling via the path lands in an open room", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const proofs = Object.fromEntries(
+    stages.slice(0, 6).map((stage) => {
+      let state = start(stage.tasks[0].goal, stage.tasks[0].assumptions);
+      for (const action of solve(state)!) state = move(state, action);
+      return [stage.id, state.rooms[0].proof];
+    }),
+  );
+  await page.addInitScript((value) => {
+    if (!localStorage.getItem("keys-and-doors:v1"))
+      localStorage.setItem("keys-and-doors:v1", value);
+  }, JSON.stringify({ proofs }));
+  await page.goto("/");
+  await page.locator('[data-stage="6"]').click();
+  await page.locator(".goal").click();
+  await page.locator('[data-room="2"]').click();
+  await page.locator(".goal").click();
+  await page.locator('[data-room="1"]').click();
+  await page.locator(".goal").click();
+  await page.locator('[data-key="0"]').click();
+  await page.locator(".goal").click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "3");
+  await page.locator("#hint").click();
+  await page.locator(".goal").click();
+  await page.locator('[data-key="0"]').click();
+  await page.locator(".goal").click();
+  await expect(page.locator(".replay-tree")).toBeVisible();
+  expect(errors).toEqual([]);
+});

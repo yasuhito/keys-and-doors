@@ -160,8 +160,10 @@ export function move(state: State, action: Action): State {
       s.current = room.parent;
       return;
     }
-    const open = parent.children.find((c) => !s.rooms[c].proof);
+    let open = parent.children.find((c) => !s.rooms[c].proof);
     if (open !== undefined) {
+      while (s.rooms[open].children.length)
+        open = s.rooms[open].children.find((c) => !s.rooms[c].proof)!;
       s.current = open;
       return;
     }

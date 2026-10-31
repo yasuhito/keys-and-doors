@@ -70,6 +70,23 @@ describe("five rules", () => {
     s = move(s, { type: "use", key: 3 });
     expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
   });
+  it("finishing a pair half skips past a sibling door opened via the path", () => {
+    let s = start("(P → P) ∧ (Q → (P → Q))", []);
+    for (const action of [
+      { type: "intro" },
+      { type: "visit", room: 2 },
+      { type: "intro" },
+      { type: "visit", room: 1 },
+      { type: "intro" },
+      { type: "use", key: 0 },
+    ] as const)
+      s = move(s, action);
+    expect(s.current).toBe(3);
+    expect(s.rooms[s.current].children).toEqual([]);
+    const rest = solve(s)!;
+    for (const action of rest) s = move(s, action);
+    expect(checkProof(s.rooms[0].proof!, [])).toBe(true);
+  });
   it("rejects nonexistent keys and rooms without mutating state", () => {
     const s = start("P", ["P"]);
     const before = structuredClone(s);

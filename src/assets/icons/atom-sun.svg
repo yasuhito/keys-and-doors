@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <title>Sun (atom P)</title>
+  <path d="M24 3.5v6M24 38.5v6M3.5 24h6M38.5 24h6M9.5 9.5l4.2 4.2M34.3 34.3l4.2 4.2M9.5 38.5l4.2-4.2M34.3 13.7l4.2-4.2" fill="none" stroke="#E0631F" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="24" cy="24" r="10.5" fill="#E0631F" stroke="#A8410C" stroke-width="2"/>
+</svg>

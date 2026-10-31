@@ -52,9 +52,9 @@ const have: Palette = {
 // Colours of what an if-then card gives you once its slot is filled.
 const pending: Palette = {
   plate: ["#EEE9E0", "#E6E0D5"],
-  edge: "#D3CCC0",
+  edge: "#AFA696",
   bridge: ["#C4BCAE", "#A9A092"],
-  arrow: "#B0A797",
+  arrow: "#AFA696",
   recess: "#E3DDD2",
   hole: { shadow: "#9D9488", fill: "#BBB2A4", edge: "#9D9488", lip: "#FAF8F3" },
   atom: () => ["#CCC4B6", "#AFA696"],
@@ -172,7 +172,13 @@ export function picture(
     path: string,
     full = false,
   ): string {
-    full ||= filled.includes(path);
+    const complete = (part: Formula, at: string): boolean =>
+      filled.includes(at) ||
+      (typeof part !== "string" &&
+        part.op === "∧" &&
+        complete(part.left, at + "L") &&
+        complete(part.right, at + "R"));
+    full ||= complete(f, path);
     if (Math.min(b.w, b.h) < 10)
       return `<text x="${n(b.x + b.w / 2)}" y="${n(b.y + b.h / 2)}" text-anchor="middle" dominant-baseline="middle" fill="#6B5E4B">···</text>`;
     if (typeof f === "string")
@@ -242,7 +248,16 @@ export function picture(
     const result = full ? have : pending;
     return `<g class="slot">${draw(f.left, first, depth + 1, "hole", p, top && depth === 0 && mode === "have", path + "S", full)}</g>${arrow}<g class="result">${
       typeof f.right === "string"
-        ? draw(f.right, second, depth + 1, "have", result, false, path + "T")
+        ? draw(
+            f.right,
+            second,
+            depth + 1,
+            "have",
+            result,
+            false,
+            path + "T",
+            full,
+          )
         : tile(
             f.right,
             second,
@@ -251,7 +266,7 @@ export function picture(
             result,
             false,
             path + "T",
-            false,
+            full,
           )
     }</g>`;
   }

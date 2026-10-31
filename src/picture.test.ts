@@ -20,6 +20,22 @@ it("keeps an if-then result grey until the whole card is filled", () => {
   expect(fitted).toContain("#2F6FD0");
   expect(fitted).toContain('stroke="#B07A1A"');
 });
+it("locks the pair bar only after both holes are seated", () => {
+  const pair = parse("P ∧ Q");
+  const partial = picture(pair, 184, 137, true, ["L"]);
+  expect(partial).toContain("#E0631F");
+  expect(partial).not.toContain("#2F6FD0");
+  expect(partial).not.toContain('fill="#D9A441"');
+  const locked = picture(pair, 184, 137, true, ["L", "R"]);
+  expect(locked).toContain("#2F6FD0");
+  expect(locked).toContain('fill="#D9A441"');
+});
+it("fills nested if-then results recursively", () => {
+  const fitted = picture(parse("P → (Q → R)"), 184, 137, false, [""]);
+  expect(fitted).toContain('class="seated"');
+  expect(fitted).toContain("#1E9A6C");
+  expect(fitted).not.toContain("#CCC4B6");
+});
 it("marks each pair hole with its path so one hole can glow alone", () => {
   const door = picture(parse("P ∧ Q"), 184, 137, true);
   expect(door).toContain('class="glow" data-path="L"');

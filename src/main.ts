@@ -6,12 +6,13 @@ import {
   solve,
   parse,
   format,
+  equal,
   type State,
   type Action,
   type Formula,
   type Proof,
 } from "./core";
-import { card, escape, icon, spoken } from "./picture";
+import { card, escape, icon, picture, spoken } from "./picture";
 import { load, save } from "./progress";
 import first from "./stages/layer-01.json";
 import second from "./stages/layer-02.json";
@@ -57,6 +58,12 @@ function enter(i: number) {
 function commit(action: Action) {
   try {
     const next = move(state, action);
+    const rootGoal = state.rooms[0].goal;
+    const doorBox = app.querySelector(".goal .object")?.getBoundingClientRect();
+    const fitted =
+      action.type === "apply"
+        ? state.rooms[state.current].keys[action.target].proof.formula
+        : undefined;
     history.push(state);
     state = next;
     selected = undefined;
@@ -65,8 +72,88 @@ function commit(action: Action) {
       progress.proofs[stages[index].id] = state.rooms[0].proof;
       persist();
       buzz([40, 40, 80]);
-      showReplay(state.rooms[0].proof);
-    } else render();
+      const proof = state.rooms[0].proof;
+      if (doorBox && typeof rootGoal !== "string" && rootGoal.op === "→") {
+        const room = app.querySelector<HTMLElement>(".room");
+        if (room) room.inert = true;
+        const door = document.createElement("span");
+        door.className = "door-fit";
+        door.style.left = `${doorBox.x}px`;
+        door.style.top = `${doorBox.y}px`;
+        door.innerHTML = card(rootGoal, "door", true, ["S"]);
+        door
+          .querySelector(".object")!
+          .insertAdjacentHTML(
+            "beforeend",
+            `<span class="fit-animation"><span class="obtained">${picture(rootGoal, 184, 137, true, [""])}</span></span>`,
+          );
+        app.append(door);
+        setTimeout(
+          () => {
+            door.remove();
+            showReplay(proof);
+          },
+          reduced() ? 150 : 1120,
+        );
+      } else showReplay(proof);
+    } else {
+      render();
+      if (fitted && action.type === "apply") {
+        const target = app.querySelector<HTMLElement>(
+          `[data-key="${action.target}"] .object`,
+        );
+        if (target) {
+          const effect = document.createElement("span");
+          effect.className = "fit-animation";
+          effect.innerHTML = `<span class="seating">${picture(fitted, 88, 66, false, ["S"])}</span><span class="obtained">${picture(fitted, 88, 66, false, [""])}</span>`;
+          target.append(effect);
+          if (!reduced() && typeof fitted !== "string") {
+            const from = effect
+              .querySelector(".obtained .result")!
+              .getBoundingClientRect();
+            const resultKey = state.rooms[state.current].keys.findIndex((k) =>
+              equal(k.proof.formula, fitted.right),
+            );
+            const destination = app.querySelector<HTMLElement>(
+              `[data-key="${resultKey}"] .object`,
+            );
+            if (destination) {
+              const to = destination.getBoundingClientRect();
+              const flight = document.createElement("span");
+              flight.className = "key-flight";
+              flight.innerHTML = card(fitted.right);
+              document.body.append(flight);
+              const animation = flight.animate(
+                [
+                  {
+                    left: `${from.x}px`,
+                    top: `${from.y}px`,
+                    width: `${from.width}px`,
+                    height: `${from.height}px`,
+                    opacity: 0.8,
+                  },
+                  {
+                    left: `${to.x}px`,
+                    top: `${to.y}px`,
+                    width: `${to.width}px`,
+                    height: `${to.height}px`,
+                    opacity: 1,
+                  },
+                ],
+                {
+                  delay: 820,
+                  duration: 300,
+                  easing: "ease-in-out",
+                  fill: "none",
+                },
+              );
+              animation.finished.finally(() => flight.remove());
+            }
+          }
+          setTimeout(() => effect.remove(), reduced() ? 150 : 1120);
+        }
+      }
+    }
   } catch {
     app.querySelector(".room")?.classList.add("reject");
     buzz([15, 40, 15]);
@@ -171,7 +258,7 @@ function renderRoom() {
         selected === undefined
           ? undefined
           : preview({ type: "apply", key: selected, target: i });
-      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${ghosts(forms)}</button>`;
+      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${forms ? fitPreview(k.proof.formula) : ""}${ghosts(forms)}</button>`;
     })
     .join(
       "",
@@ -222,7 +309,28 @@ function renderRoom() {
       render();
     }
   };
+  if (selected !== undefined) highlightHoles(selected);
   bindGestures();
+}
+function highlightHoles(key: number) {
+  const held = state.rooms[state.current].keys[key].proof.formula;
+  app.querySelectorAll<HTMLElement>("[data-drop]").forEach((target) => {
+    const f =
+      target.dataset.drop === "door"
+        ? state.rooms[state.current].goal
+        : target.dataset.key !== undefined
+          ? state.rooms[state.current].keys[Number(target.dataset.key)].proof
+              .formula
+          : undefined;
+    target.querySelectorAll<SVGElement>(".glow[data-path]").forEach((halo) => {
+      let part = f;
+      for (const step of halo.dataset.path ?? "") {
+        if (part && typeof part !== "string")
+          part = step === "L" || step === "S" ? part.left : part.right;
+      }
+      halo.classList.toggle("matching", !!part && equal(part, held));
+    });
+  });
 }
 // A pair door shows each half it has already opened with its key seated.
 function filled(room: State["rooms"][number]) {
@@ -231,6 +339,9 @@ function filled(room: State["rooms"][number]) {
   return room.children.flatMap((c, i) =>
     state.rooms[c].proof ? [i ? "R" : "L"] : [],
   );
+}
+function fitPreview(f: Formula) {
+  return `<span class="fit-preview">${picture(f, 88, 66, false, [""])}</span>`;
 }
 function ribbon(ids: number[]) {
   return ids.length
@@ -358,8 +469,16 @@ function bindGestures() {
           if (a && preview(a)) {
             t.classList.add("valid");
             t.insertAdjacentHTML("beforeend", ghosts(preview(a)));
+            if (a.type === "apply")
+              t.insertAdjacentHTML(
+                "beforeend",
+                fitPreview(
+                  state.rooms[state.current].keys[a.target].proof.formula,
+                ),
+              );
           }
         });
+        highlightHoles(selected);
         el.classList.add("drag-source");
         floating = document.createElement("div");
         floating.className = "drag-copy";

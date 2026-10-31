@@ -7,7 +7,7 @@ Scope: propositional logic with the five moves below, eight stages.
 | Logic | In the game |
 | --- | --- |
 | Assumption use | Drop a key into the door's hole of the same shape |
-| And-intro (∧I) | Fill both holes of a pair door |
+| And-intro (∧I) | Tap the brass joint of a pair door: it splits into two doors, then fill each one's hole |
 | And-elim (∧E) | Drop a pair key on an empty slot: its bar snaps and you get both keys |
 | If-intro (→I) | Tap an if-then door: you borrow the key its hole wants, then make its grey half |
 | If-elim (→E) | Fit a key into the hole of an if-then key: its grey half fills with colour and becomes a new key |
@@ -21,7 +21,7 @@ Scope: propositional logic with the five moves below, eight stages.
    - **Colour** (the shape raised, with a visible thickness): *you have this.*
    - **Grey** (the shape printed flat in grey): *you will get this once the hole next to it is filled.*
 
-   The only other marks are an **arrow** (this hole gives that grey thing) and a **bar** that bolts two shapes together (you need both, or you hold both). Players already know arrows, cut-out shapes, and things bolted together, so no symbol needs to be taught. Player feedback showed that the earlier abstract marks (a `>` chevron for if-then and a brass ring for and) were not understood Rectangular key cards are gone for the same reason: they put a rectangle around the one thing that matters, the shape.
+   The only other marks are an **arrow** (this hole gives that grey thing), a **bar** that bolts two shapes together on a key (you hold both), and a raised **brass joint** between the two halves of a door (you need both; tap here to take the door apart, 2.8). Players already know arrows, cut-out shapes, things bolted together, and hinges, so no symbol needs to be taught. Player feedback showed that the earlier abstract marks (a `>` chevron for if-then and a brass ring for and) were not understood Rectangular key cards are gone for the same reason: they put a rectangle around the one thing that matters, the shape.
 4. **Keys go forward, doors go backward.** Elimination rules act on keys (what you have) and make more keys. Introduction rules act on the door (what you need) and make simpler doors. Play ends when a key fits a hole of the same shape. A player never has to learn which rule applies: the object they touch decides it.
 5. **One shape per proposition, everywhere.** A proposition always has the same outline, at every size and nesting depth. Compound keys are built from the outlines of their parts (section 2.3), so their outline is unique too, and so is their hole.
 6. **One room per screen.** The phone shows exactly one open goal at a time. The path bar at the top shows where that room sits.
@@ -66,12 +66,12 @@ A compound key is built from the shapes of its parts, so its outline is as disti
 
 | Connective | Name in game | Key (you hold it) | Hole (you need it) | Icon |
 | --- | --- | --- | --- | --- |
-| A ∧ B | Pair | Shape A and shape B **bolted together by a brass bar** that runs behind both | Hole A and hole B, joined by a recessed **channel** for the bar. Both holes must be filled | `conn-and.svg` |
+| A ∧ B | Pair | Shape A and shape B **bolted together by a brass bar** that runs behind both | On a **goal door**: hole A and hole B with a raised **brass joint** between them, not a hole. Tap the joint and the door splits into a door for A and a door for B (2.8). Inside a key (the hole of an if-then key, a pocket floor): hole A and hole B joined by a recessed **channel**, because there only a whole pair key fits | `conn-and.svg` |
 | A → B | If-then | A cream **plate** that hugs its contents: the **hole of A**, an **arrow**, and **B in grey**. The plate's outline is its contents grown by a margin, so it follows their shapes | A **pocket**: a shallow recess with the plate's outline, with the plate's face (hole of A, arrow, grey B) printed on its floor | `conn-imp.svg` |
 
 Why these pictures:
 
-- **Pair** is symmetric because ∧ is. Two shapes bolted together read as "these belong together": on a key, you hold both; on a door, two holes joined by a channel read as one lock with two keyholes, and nothing opens until both are filled. When the second hole is filled, a brass bar drops into the channel (6.3).
+- **Pair** is symmetric because ∧ is. Two shapes bolted together read as "these belong together": on a key, you hold both. On a goal door the bolt is a raised brass joint, the hinge where the door comes apart. Players said the old recessed channel read as one more hole to fill, which it was not. A joint is clearly not a hole, so it can't be mistaken for a place to drop something. It also invites a tap, and the tap is the next step of the proof: take the goal's AND apart, as in the original Proof Dungeon's goal decomposition.
 - **If-then** is asymmetric because → is. The hole says "put A in", the arrow says "and you get", the grey says "this, which you do not have yet". Fitting A turns the grey colour: that *is* if-elim. The plate exists because the hole of A needs something solid to be cut into; it hugs its contents so that the key still has a shape of its own and no rectangle appears.
 - An if-then **door** is a pocket for exactly that plate. Its floor shows the same face as the key, so it reads as "make the grey half real, given the hole's key", which is if-intro. Tapping the hole on the floor lends you its key (6.6).
 
@@ -81,7 +81,8 @@ Why these pictures:
 - A pair as A of an if-then: the hole of A is the pair's hole (two holes and a channel), cut into the plate.
 - An if-then as A of an if-then: the hole of A is a pocket in the outer plate, with the inner key's face on its floor at 60% opacity. The dimmed face says "a key that looks like this goes here", not "put a sun here".
 - A compound as B of an if-then: B is drawn whole in grey: a grey pair bar, or a grey plate (`pending-plate`, edge `pending-edge`) with its own grey contents.
-- An if-then as a half of a pair door: that half is a pocket at full opacity (a door shows its holes plainly).
+- An if-then as a half of a pair door: that half is a pocket at full opacity (a door shows its holes plainly). After the split it is a door of its own, an if-then door (2.7).
+- A pair as a half of a pair door: that half has its own, smaller joint, across its own split axis (2.8).
 
 ### 2.4 Layout rule (recursive)
 
@@ -91,7 +92,7 @@ Inside a box `b`:
 
 1. **Fold:** if the shorter side of `b` is under **10 px**, draw `···` in `seam` instead. Long-press shows the full formula.
 2. **Atom:** the silhouette is a square of side `s = 92%` of the shorter side of `b`, centred in `b`. The 48-grid path is scaled by `s / 48`; stroke widths given in px are divided by that scale.
-3. **Pair:** split `b` along its **longer** axis into two equal halves, with gap `clamp(6, 10% of the long side, 16)`, so nesting alternates between side by side and stacked on its own. The **bar** runs from the centre of the first half to the centre of the second, thickness `clamp(4, 14% of the short side, 10)`, fully rounded ends, drawn **behind** both shapes: only the part in the gap shows. Key: `brass` with a 1 px `brass-dark` edge. Hole: a recessed channel (2.5).
+3. **Pair:** split `b` along its **longer** axis into two equal halves, with gap `clamp(6, 10% of the long side, 16)`, so nesting alternates between side by side and stacked on its own. The **bar** runs from the centre of the first half to the centre of the second, thickness `clamp(4, 14% of the short side, 10)`, fully rounded ends, drawn **behind** both shapes: only the part in the gap shows. Key: `brass` with a 1 px `brass-dark` edge. Hole inside a key or on a pocket floor: a recessed channel (2.5). On a goal door the gap is `clamp(20, 16% of the long side, 32)` and holds the **joint** instead (2.8).
 4. **If-then:** margin `m = clamp(2, 7% of the shorter side of b, 7)`. Inset `b` by `m`, then split it like a pair, with gap `clamp(12, 16% of the long side, 26)`. The first half holds the **hole of A**, the second **B in grey**.
    - **Arrow**, centred in the gap: shaft `max(8, gap − 4)`, open head of size `clamp(3, 33% of the shaft, 6)`, stroke `clamp(1.8, 3% of the short side, 3.5)`, round caps and joins, colour `seam`. It points right in a row and down in a column.
    - **Spine:** a band from the centre of the first half to the centre of the second, `2 ×` the arrow head size thick, so the plate stays one piece under the arrow.
@@ -118,7 +119,7 @@ Light comes from above. A key stands out of the surface, so its thickness shows 
 | Pair channel | `clamp(1, 20% of the bar thickness, 2.5)` | `hole-shadow` / `hole` |
 | If-then pocket | `clamp(1.5, 4% of the shorter side of its box, 4)` | `pocket-shadow` / `pocket` |
 
-A pair hole is its channel first, then each half's hole on top, so the halves' lips cover the channel ends. Inside a grey half, recesses use the grey set (`pending-hole-shadow`, `pending-hole`, `pending-lip`, `pending-pocket-shadow`, `pending-pocket`).
+A pair hole (inside a key or on a pocket floor) is its channel first, then each half's hole on top, so the halves' lips cover the channel ends. A goal door has no channel: its joint is raised (2.8). Inside a grey half, recesses use the grey set (`pending-hole-shadow`, `pending-hole`, `pending-lip`, `pending-pocket-shadow`, `pending-pocket`).
 
 ### 2.6 States
 
@@ -134,8 +135,9 @@ A pair hole is its channel first, then each half's hole on top, so the halves' l
 | | Lit | `lit`, stroke × 1.25 |
 | Grey half | Waiting | Grey look |
 | | Obtained | Colour look, still flat (it is printed on the plate until it lifts out, 6.1) |
-| Pair channel | Waiting | Recessed channel |
+| Pair channel (inside a key) | Waiting | Recessed channel |
 | | Locked | The `brass` bar seated in the channel, flush |
+| Joint (goal door) | Idle, pressed, split, half lit, both lit | See 2.8 |
 | If-then pocket | Empty | Recess with the face on its floor |
 | | Seated | The if-then key, as you hold it (its own hole empty, its result grey), flush |
 
@@ -151,12 +153,14 @@ A pair hole is its channel first, then each half's hole on top, so the halves' l
 | `.arrow` | An if-then arrow |
 | `.result` | The grey half of an if-then |
 | `.pair`, `.bridge` | A pair, and its bar or channel |
+| `.joint` | The brass joint of a goal door, with `data-path` set to the pair's path. It is a button (2.8) |
+| `.coupler` | The brass link between split doors, with its `.tab` children `data-side="L"` and `data-side="R"` (2.8) |
 | `.cut` | A hole, with `data-path` set to its path. Its bounding box is the hole the seat motion (6.1) aims at |
 | `.imprint` | The face on the floor of a pocket |
 | `.seated` | A seated key |
 | `.glow` | A halo, with `data-path` set to the path of its hole, so a pair door can light only the hole the held key fits |
 
-Halos exist on every hole of a door (each atom and each pair, at every depth, outside pockets) and on the outermost hole of an if-then key. An if-then door has none: what fits it is a whole if-then key, so the door's outline glows instead.
+Halos exist on every hole of a door (each atom and each pair, at every depth, outside pockets) and on the outermost hole of an if-then key. An if-then door has none: what fits it is a whole if-then key, so the door's outline glows instead. On an **unsplit** pair door the halves' holes never glow for a single key, because a single key does not fit there until the door is split (2.8). Only a whole pair key fits an unsplit door, and then the whole door glows.
 
 ### 2.7 Frames: what role a picture plays
 
@@ -164,11 +168,64 @@ Halos exist on every hole of a door (each atom and each pair, at every depth, ou
 | --- | --- | --- |
 | Key | An assumption you hold | The shape alone, with its thickness, on the tray. No card, no rim, no bow. The tray icon `key.svg` is a brass cut-out piece |
 | Door | The goal of this room | The `paper` panel mounted on an arched wooden door (`wood` / `wood-dark`) with a brass knob. The panel shows holes. Icon `door.svg` |
-| Pair door | A pair goal | A door whose panel has two holes joined by a channel. Icon `door-pair.svg` |
+| Pair door | A pair goal | A door whose panel has two holes with a raised brass joint between them (2.8). Icon `door-pair.svg` |
+| Split doors | A pair goal after its joint was tapped | Two smaller doors in a row joined by a brass coupler: door, brass, door. Each has exactly one hole (2.8) |
 | Open door | A cleared goal | Door leaf swung open, warm `light` inside, green check. Icon `door-open.svg` |
 | Ghost | A preview of what a drop will make | Any frame at 50% opacity inside a dashed `ok` outline |
 | Tree node | A step in the replayed proof | The shape in the colour look, like a key |
 | Selected key | The key chosen for tap-tap | Its tray cell turns `night-3` with a 2 px white outline |
+
+### 2.8 The brass joint and split doors
+
+![Joint, split, fill, clear](mockups/split.svg)
+
+![Exact layout on a 360 px phone](mockups/split-room.svg)
+
+**Status.** This section is specified for implementation. The runtime (`picture()`, `main.ts`), the icons `door-pair.svg` and `rule-and-intro.svg`, and the generated sheets `cards.svg`, `room.svg`, `paths.svg` and `stages.svg` still show the old recessed channel until that work lands. `split.svg` and `split-room.svg` are the reference for the new look.
+
+On a goal door, AND is not a hole. The two halves are holes; between them sits a raised brass **joint**, the hinge where the door comes apart. Tapping the joint splits the door into two doors in a row, **door, brass, door**: the left door wants only the left half (for example the sun), the right door only the right half (the moon). Each split door has exactly one hole. When both holes are filled, the pair is made and the room is cleared, which clears the stage if this was the stage's door.
+
+**The joint** (lengths at the phone door panel, 184 × 137):
+
+| Part | Value |
+| --- | --- |
+| Position | Centred in the gap between the halves, which is `clamp(20, 16% of the long side, 32)` on a goal door (28 px here) |
+| Shape | A strip across the split axis: vertical when the halves sit side by side, horizontal when they are stacked. Width 14 px (nested: `clamp(8, 50% of the gap, 14)`), length = the pair's box across the split axis minus 8 px at each end (121 px here), fully rounded ends |
+| Face | `brass`, 1 px `brass-dark` edge. Three knuckle grooves at 1/4, 1/2 and 3/4 of its length: 1 px `brass-dark` lines, inset 2 px from each side |
+| Thickness | The strip in `brass-dark`, moved down 2 px, behind the face. It is raised like a key (2.5), never recessed |
+| Hit target | 48 px across the strip × (its length + 16 px), at least 48 × 48, centred on the strip: 48 × 137 here. A nested joint (for example inside (P ∧ Q) ∧ R) still gets at least 48 × 48 |
+| Element | A `<button class="joint">` labelled with the formula in words, for example "split sun and moon". No visible text |
+
+**Split doors** (phone, 360 px wide):
+
+| Part | Value |
+| --- | --- |
+| Leaf | 146 × 162: the runtime door leaf (10 px `wood-dark` border, arched top of radius 73, brass knob) with padding 36 top, 13 sides, 30 bottom |
+| Panel | 100 × 76, holding one hole drawn by `picture()` as a door of that half (an atom at 58.7 px, 95% of its size on the unsplit door) |
+| Row | Leaf, coupler, leaf: 146 + 36 + 146 = 328 px, centred, vertically centred in the door area. Narrower screens: leaf width = (door-area width − 36) / 2, panel scaled with it |
+| Coupler | The joint again, at the row centre, 14 × 64 (panel height − 12), plus two **tabs** 12 × 10 that join it to each leaf's border at panel-centre height. Same raised look. It is not a button |
+| Order | Left door = left half (`L`), right door = right half (`R`), the same order as on the key and on the unsplit door. Stacked halves split into the same left-right row: top becomes left |
+
+**Deeper pairs.** If a split door's half is itself a pair, that door shows its own joint. A row holds at most two doors on a phone. Tapping a joint whose split would make leaves narrower than 120 px zooms into that door as a room of its own (300 ms, `in-out`, path bar fork, 4.3), where it splits in place.
+
+**States:**
+
+| State | Look |
+| --- | --- |
+| Joint idle | As above. Nothing moves |
+| Joint hint | While a single key is lifted or selected and it matches a half of an unsplit door, the joint gets a 2 px `light` outline 4 px outside its edge, opacity pulsing 1 → 0.45 → 1 every 1.2 s like a halo (2.6). The halves' holes do not glow |
+| Joint pressed | On touch-down: the face moves down 1.5 px and the thickness shrinks to 0.5 px (pushed in), and a 2 px `light` rim appears 2 px outside the face, over 80 ms (`out`). Sliding more than 8 px off the hit target cancels: back to idle over 120 ms (`out`). Releasing on it commits (6.3) |
+| Split | Door, brass, door. Each hole glows for a held key of its shape |
+| Half filled | That door's key is seated (2.6). The coupler's tab on that side turns `light` |
+| Both filled | Both tabs and the coupler strip are `light` |
+| Cleared | Both doors open together: leaves swung open, `light` inside (6.3) |
+
+**Drops.**
+
+- A single key fits only a hole of a **split** door. Dropped on an unsplit pair door, it flies back (5.1), and the joint does one emphasis pulse, 1 → 1.04 → 1 over 240 ms (`in-out`), so the joint is where the eye goes next. No haptic: it is a plain miss (8).
+- A whole pair key fits an unsplit pair door (assumption use). It seats as one piece (6.1); its bar comes to rest on the joint and covers it. Then the door opens (6.5). A split door does not take a pair key: snap it first (6.4).
+- Tapping a split door's hole with nothing selected enters a room whose door is that half (5.4). Use this when you have no key of that shape yet.
+- Undo right after a split joins the doors again: the split animation in reverse, 300 ms (`in-out`).
 
 ## 3. Colour
 
@@ -184,7 +241,7 @@ The game is played at dusk: a dark indigo room, wooden doors with warm paper pan
 | `paper` | `#F7F1E6` | Door panel, if-then plate |
 | `edge` | `#D9CDB8` | Door panel border |
 | `hole-shadow` | `#2E261F` | Body and outline of a hole (2.5) |
-| `hole` | `#5E5143` | Floor of a hole and of a pair channel |
+| `hole` | `#5E5143` | Floor of a hole and of a pair channel inside a key |
 | `lip` | `#FFFFFF` | Bright lip below a recess |
 | `pocket-shadow` / `pocket` | `#A8997E` / `#DDD0B8` | Body and floor of an if-then pocket (2.5) |
 | `pending` | `#CCC4B6` | Grey shapes: what you get once a hole is filled |
@@ -195,8 +252,8 @@ The game is played at dusk: a dark indigo room, wooden doors with warm paper pan
 | `pending-pocket-shadow` / `pending-pocket` | `#C9C1B4` / `#E3DDD2` | Pockets inside a grey half |
 | `seam` | `#6B5E4B` | Arrow, folded-pane dots, formula punctuation |
 | `lit` | `#B07A1A` | Arrow once its hole is filled |
-| `brass` | `#D9A441` | Pair bar, tray icon |
-| `brass-dark` | `#9C7024` | Edge and thickness of pair bars and if-then plates |
+| `brass` | `#D9A441` | Pair bar, joint and coupler (2.8), tray icon |
+| `brass-dark` | `#9C7024` | Edge and thickness of pair bars, joints, couplers and if-then plates |
 | `wood` | `#8C5A3C` | Door leaf |
 | `wood-dark` | `#5E3B27` | Door frame, sill |
 | `light` | `#FFE7A8` | Open doorway, primary "next" button |
@@ -233,7 +290,7 @@ All mockups use a 360 × 780 portrait viewport. Keep touch targets at least 48 �
 From top to bottom:
 
 1. **Path bar** (y 24 to 88). On the left, the stage-map button (`ui-stages.svg`). Then one thumbnail chip per room on the way from the stage door to the current room (section 4.3).
-2. **Door** (y 100 to 430). The current goal, large and centred. Its holes are drop targets, and the holes of a pair or if-then door are also tap targets.
+2. **Door** (y 100 to 430). The current goal, large and centred. Its holes are drop targets. The joint of a pair door, the holes of split doors, and the hole of an if-then door are tap targets. After a split this area shows the row door, brass, door (2.8).
 3. **Key tray** (y 448 to 708, `night-2`). Keys in a 3-column grid of 96 × 74 cells, in the order they were obtained. Each key is drawn as its bare shape at 88 × 66 (102 × 77 from 700 px wide, 80 × 60 below 380 px); the whole cell is its touch target. New keys are appended. When the tray holds more than six keys it scrolls vertically.
 4. **Bottom bar** (y 718 to 766): undo (`ui-undo.svg`), restart room (`ui-reset.svg`), hint (`ui-hint.svg`), formula captions (`ui-formula.svg`).
 
@@ -250,7 +307,7 @@ The mockup shows stage 7 inside the if-intro room. The player is dragging the ri
 | Open sibling (from and-intro, not done yet) | Thumbnail dimmed 55%, on a branch |
 | Cleared sibling | Dimmed thumbnail and green check badge |
 
-- Chips show their room's door, so they show holes. And-intro draws a **fork**: the parent chip has two branches, one per hole of the pair door. Once a half is cleared, the parent chip shows that hole with its key seated. Tap any chip of an unfinished room to go there.
+- Chips show their room's door, so they show holes. A split pair door is one chip that shows the row (two tiny doors and the coupler). Entering a half's room (tapping a split door's hole) draws a **fork**: the parent chip has two branches, one per split door. Once a half is cleared, the parent chip shows that hole with its key seated. Tap any chip of an unfinished room to go there.
 - If-intro rooms show their **ribbon** on their chip. Every key in the tray that depends on that room carries the same ribbon.
 - If the chips do not fit in the width, the oldest chips collapse into one stacked chip. Tapping it expands the full path as an overlay.
 
@@ -292,11 +349,12 @@ Settings is the only screen that may use words, because it is reached rarely and
 
 | Gesture | On | Result |
 | --- | --- | --- |
-| Drag | Key → door it fits: any key into the hole of its own outline (an atom into its silhouette, a pair into both holes and the channel, an if-then key into the pocket of its plate) | Assumption use |
-| Drag | Key → matching hole of a pair door | That half is filled (and-intro, then assumption use) |
+| Drag | Key → door it fits: any key into the hole of its own outline (an atom into its silhouette, a pair key into an unsplit pair door, its bar over the joint, an if-then key into the pocket of its plate) | Assumption use |
+| Tap | Brass joint of a pair door | And-intro: the door splits into door, brass, door (2.8) |
+| Drag | Key → the hole of a split door | That half is filled (assumption use in that half) |
 | Drag | Key A → hole of an if-then key A → B | If-elim: new key B |
 | Drag | Pair key A ∧ B → empty tray slot | And-elim: new keys A and B |
-| Tap | A hole of a pair door | Enter a room whose door is that half |
+| Tap | The hole of a split door | Enter a room whose door is that half |
 | Tap | If-then door A → B | If-intro: borrow key A, enter a room with door B |
 | Double tap | If-then key A → B | Enter a room whose door is A, to make the key its hole wants |
 | Tap, then tap | Key, then target | Same as dragging that key to that target |
@@ -306,7 +364,7 @@ Settings is the only screen that may use words, because it is reached rarely and
 ### 5.1 Drag
 
 - **Pick up:** touch a key and move it more than 8 px. The copy lifts (scaled to 80%, rotated −5°, with the shadow of its own outline as in 6.1) and follows the finger, offset upward so the finger never hides the picture. The original stays in its slot at 30% opacity.
-- **Valid targets glow** as soon as the key is lifted: the target gets a 3 px `ok` outline, and the hole the key fits gets its pulsing halo (2.6). On a pair door, only the hole of the held key's shape glows. Invalid targets do not react. The player sees all their options before moving.
+- **Valid targets glow** as soon as the key is lifted: the target gets a 3 px `ok` outline, and the hole the key fits gets its pulsing halo (2.6). On split doors, only the hole of the held key's shape glows. On an unsplit pair door, the joint shows its hint instead (2.8). Invalid targets do not react. The player sees all their options before moving.
 - **Hover:** when the dragged key's centre enters a valid target, the target scales to 104%, a light haptic tick plays, and the **drop-point preview** appears (section 5.3).
 - **Drop on a valid target:** the action happens, and the copy flies into the target.
 - **Drop elsewhere:** the copy flies back to its slot (200 ms ease-out). There is no penalty and no message.
@@ -332,7 +390,7 @@ If the result is a key that is already in the tray, the preview highlights the e
 
 ### 5.4 Tapping a door (introduction)
 
-- Press-and-hold feedback: on touch-down, the hole under the finger gets a 2 px `light` rim (pair door) or the hole on an if-then door's pocket floor gets the same rim. Releasing commits. Sliding off cancels.
+- Press-and-hold feedback: on touch-down, the joint of a pair door shows its pressed state (2.8), the hole of a split door gets a 2 px `light` rim, or the hole on an if-then door's pocket floor gets the same rim. Releasing commits. Sliding off cancels.
 - An atom door has no intro. Tapping it does a small wiggle, and the tray gently pulses to point at the keys.
 
 ### 5.5 Undo and restart
@@ -383,13 +441,23 @@ Total: 1460 ms. If key B is already in the tray, the Delivered copy moves to tha
 
 **Input during the animation.** The state changes at 0; the animation only shows it. A new touch anywhere jumps every running animation to its end state at once, and the touch is then handled as normal. Undo works the same way.
 
-### 6.3 Filling a pair door (and-intro)
+### 6.3 Splitting and filling a pair door (and-intro)
 
-The runtime motion is `fitMotion()` in `src/motion.ts`, which follows the timings below.
+![Joint, split, fill, clear](mockups/split.svg)
 
-Under the hood, filling a hole is and-intro followed by assumption use in that half's room; the view stays on the pair door.
+Status: specified for implementation (2.8). The current runtime (`fitMotion()` in `src/motion.ts`) still fills both holes of an unsplit door and drops a bar into the channel.
 
-**First hole:** Fly and Key settles (6.1), 0 to 340. Medium haptic at 220. At 340 redraw that hole seated (`filled: ["L"]` or `["R"]`). Nothing else moves: the other hole stays empty, and the action ends at 340.
+**Split** (the player releases on the joint, 2.8):
+
+| Time (ms) | What moves |
+| --- | --- |
+| 0 | Medium haptic: the split is committed |
+| 0 to 160 | **Seam**: a 3 px `light` line, round caps, draws along the joint's centre line from one end to the other (`pathLength="1"`, `stroke-dashoffset` 1 → 0, `in-out`). At the same time the joint comes back up from pressed to idle (`out`) |
+| 160 to 220 | Beat: nothing moves |
+| 220 to 520 | **Apart**: the panel parts at the joint into two pieces, each carrying its hole. They slide outward to the split panels (43.5 px each way on a phone) and shrink to the split panel size, so the holes go 100% → 95% (`in-out`). The unsplit leaf fades out over 220 to 420 (`linear`) and the two split leaves fade in over 320 to 520 (`out`). Over 360 to 520 the joint shortens to the coupler's length (scale along its length 1 → 0.53 about its centre, `in-out`) and the two tabs grow out of it to the leaves (scale along their length 0 → 1 from the strip, `out`). Nothing overshoots |
+| 520 | Redraw the row door, brass, door. The board is calm |
+
+**First hole:** Fly and Key settles into that split door (6.1), 0 to 340, medium haptic at 220. Then a 60 ms beat, and over 400 to 620 the coupler's tab on that side fills with `light`, wiping from the door towards the strip (`in-out`). The action ends at 620; the other door stays as it was.
 
 **Last hole:**
 
@@ -397,12 +465,16 @@ Under the hood, filling a hole is and-intro followed by assumption use in that h
 | --- | --- |
 | 0 to 340 | Fly and Key settles. Medium haptic at 220 |
 | 340 to 400 | Beat: nothing moves |
-| 400 to 620 | **Bar locks**: the flush `brass` bar grows inside the channel from its centre outward to both ends (`out`). Scale along the channel's long axis 0 → 1 about its centre; across the channel it is full size throughout. No overshoot |
-| 620 | Redraw `filled: [""]`. Medium haptic |
-| 620 to 680 | Beat: nothing moves |
-| 680 | The door opens as in 6.5, with 680 as its start |
+| 400 to 620 | **Tab lights**: that side's tab fills with `light`, wiping towards the strip (`in-out`) |
+| 620 to 860 | **Pair made**: the strip turns `light` at 620, and the whole coupler pulses 1 → 1.04 → 1, peak at 740 (`in-out`). Medium haptic at 620 |
+| 860 to 920 | Beat: nothing moves |
+| 920 to 1320 | **Cleared**: both doors swing open together (`in-out`), and `light` fills their doorways over 1020 to 1320 (`out`). Success haptic at 1320 if this clears the stage; otherwise go on as in 6.5 |
 
-**A hole the player cannot fill directly:** tapping it zooms into that hole (300 ms, `in-out`), and the room's door becomes that half. The path bar forks. On clearing that room, zoom back out (300 ms, `in-out`), then after a 60 ms beat the made shape fades in at 104% of the seated size and settles as in 6.1 (120 ms, `out`, medium haptic). If it was the last hole, Bar locks follows after a 60 ms beat.
+Total: 1320 ms, within the 1.7 s limit (8).
+
+**A half the player cannot fill directly:** tapping that split door's hole zooms into it (300 ms, `in-out`), and the room's door becomes that half. The path bar forks. On clearing that room, zoom back out (300 ms, `in-out`), then after a 60 ms beat the made shape fades in at 104% of the seated size and settles as in 6.1 (120 ms, `out`, medium haptic). The steps from the beat at 340 above follow (first or last hole).
+
+**A whole pair key** dropped on an unsplit pair door seats as one piece (6.1, its bar resting on the joint), then the door opens as in 6.5.
 
 ### 6.4 Snapping a pair key (and-elim)
 
@@ -435,6 +507,8 @@ Fly and Key settles as in 6.1 (0 to 340), then a 60 ms beat. The door swings ope
 ### 6.7 Reduced motion
 
 Flights and camera moves become 150 ms cross-fades (`linear`). Seating, the arrow, the colour fill, and the pair bar appear together in one 150 ms cross-fade from the empty to the filled picture. Nothing changes size: pulses, the settle, and the bar growth are dropped. Haptics stay.
+
+For pair doors (6.3): the split is one 150 ms cross-fade from the unsplit door to the row door, brass, door; the seam, the slide and the joint's shortening are dropped. A tab or the coupler lighting is a 150 ms cross-fade; the coupler pulse is dropped; the doors opening is a 150 ms cross-fade to the open doors. The joint's pressed state still moves its face 1.5 px (nothing changes size), and its hint is a steady outline instead of a pulsing one.
 
 ## 7. Feedback without words
 
@@ -472,7 +546,7 @@ The stage list belongs to level design. This proposal shows that the visual syst
 | # | Keys | Door | New move |
 | --- | --- | --- | --- |
 | 1 | P, Q | P | Assumption use |
-| 2 | P, Q | P ∧ Q | And-intro |
+| 2 | P, Q | P ∧ Q | And-intro (tap the joint, fill both doors) |
 | 3 | P ∧ Q | Q | And-elim |
 | 4 | P ∧ Q | Q ∧ P | (combine) |
 | 5 | P → Q, P | Q | If-elim |
@@ -499,9 +573,26 @@ The SVGs in `docs/mockups/` are illustrations for this document, built from the 
 
 The connective icons follow the three looks in one colour: a hole is an outline with a thick inner rim at the top, a held shape is solid, and a grey shape is solid at 35% opacity. The atom icons are drawn like keys: the face over its thickness (the outline in the edge colour, 2.6 units down), at 92% of the grid.
 
-## 12. Reserved for later
+## 12. Proposal: splitting other goals
 
-These are not part of the current scope. They are listed so that new pictures do not collide with the current ones. The arrow, the bolted bar, and the hugging plate are taken:
+The original Proof Dungeon takes a goal apart one connective at a time: each introduction rule turns the goal into simpler goals, until assumptions close them. Keys & Doors follows the same flow. **Every introduction is a tap on the door** (principle 4), and each connective gets its own affordance on the door that is not a hole, so it can never be mistaken for a place to drop a key. The brass joint is the first of these. The table proposes the rest.
+
+| Goal | Rule | On the door | Simple enough now? | Status |
+| --- | --- | --- | --- | --- |
+| A ∧ B | ∧I: prove A, prove B | Brass joint between the halves. Tap: door, brass, door, one hole each (2.8, 6.3) | Yes. The core already opens one room per half for ∧I (`fill` in `src/core.ts`); only the door, its tap and its motion change | **In this PR** (specified; runtime work follows) |
+| A → B | →I: assume A as a new key, prove B | Already in the game: tap the if-then door, borrow key A (with a ribbon), and the door becomes B (6.6). Later the pocket's arrow could become a brass hinge too, so all intro taps look alike | Already implemented, no change needed | Unchanged |
+| A ∨ B | ∨I: choose which side to prove | A brass **fork** (Y) between the halves instead of a strip (section 13 already reserves the fork for or). Tap: two doors with the fork between them, both lit as choices. Tapping one door chooses it; the other dims to 35% and slides out, and undo brings it back. Then fill the chosen door | No. Needs ∨ in the core and in `picture()` (or keys too), and almost every or stage (layer 3) also needs ∨E, a case split into two rooms, on the key side. ∨I alone makes only stage 3-1 playable. Do ∨I and ∨E together | Proposal |
+| ¬A, that is A → ⊥ | ¬I: assume A, prove ⊥ | The if-then door with the cracked token (section 13) as its grey half: borrow A, the door becomes a cracked-token hole | Small once ⊥ exists, because it is →I. But it needs the ⊥ picture first, and its stages (layer 4) also need ⊥E | Proposal |
+| ⊥ | No intro rule | A cracked-token hole, no joint. Filled only by a cracked key, which you make by fitting key A into key ¬A (→E, already in the game) | Comes with ⊥ | Proposal |
+| Any A, classically | RAA: assume ¬A, prove ⊥ | A small brass lever on the door frame, shown only from layer 5. Pull: borrow key ¬A (ribboned), the door becomes ⊥ | No. Classical only, and it needs an affordance that does not tempt players in the earlier, intuitionistic layers | Proposal |
+| Any goal from ⊥ | ⊥E: a cracked key fits any hole | Not a door affordance: a cracked key glows on every hole | Comes with ⊥ | Proposal |
+| ∀x. φ, ∃x. φ | ∀I (fresh variable), ∃I (choose a witness) | Not designed yet | No. First-order logic is out of the current scope | Out of scope |
+
+Suggested order after AND: ∨I with ∨E (layer 3), then ⊥, ¬ and ⊥E (layer 4), then RAA (layer 5).
+
+## 13. Reserved for later
+
+These are not part of the current scope. They are listed so that new pictures do not collide with the current ones. The arrow, the bolted bar, the brass joint, and the hugging plate are taken:
 
 - **Or (∨):** two shapes side by side with **no** bar, hanging from a **fork** (a Y-shaped split): one of the two, not both.
 - **Falsum (⊥):** a **cracked** blank token: a disc with a jagged crack through it.

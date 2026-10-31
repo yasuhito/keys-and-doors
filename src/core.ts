@@ -106,6 +106,7 @@ export type Room = {
   children: number[];
   mode?: "∧I" | "→I" | "lemma";
   proof?: Proof;
+  filled?: boolean;
   ribbon?: number;
 };
 export type State = { rooms: Room[]; current: number; initial: Formula[] };
@@ -168,7 +169,27 @@ export function move(state: State, action: Action): State {
   if (r.proof || (r.children.length && r.mode !== "∧I"))
     throw Error("closed room");
   if (action.type === "reset") {
-    if (r.keys.length === r.entry.length) throw Error("nothing to reset");
+    const fills = r.children.filter((c) => s.rooms[c].filled);
+    for (const c of fills) {
+      delete s.rooms[c].proof;
+      delete s.rooms[c].filled;
+    }
+    const unopened =
+      r.mode === "∧I" &&
+      r.children.every(
+        (c, i) =>
+          c === s.rooms.length - r.children.length + i &&
+          !s.rooms[c].proof &&
+          !s.rooms[c].children.length &&
+          s.rooms[c].keys.length === s.rooms[c].entry.length,
+      );
+    if (r.keys.length === r.entry.length && !fills.length && !unopened)
+      throw Error("nothing to reset");
+    if (unopened) {
+      s.rooms.length -= r.children.length;
+      r.children = [];
+      delete r.mode;
+    }
     r.keys = structuredClone(r.entry);
     return s;
   }
@@ -255,6 +276,7 @@ export function move(state: State, action: Action): State {
     const child = r.children[action.side === "L" ? 0 : 1];
     if (s.rooms[child].proof) throw Error("closed half");
     finish(child, key.proof);
+    s.rooms[child].filled = true;
     if (!r.proof) s.current = state.current;
   }
   if (action.type === "use") {

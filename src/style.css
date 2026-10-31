@@ -460,6 +460,10 @@ body:has(.drag-copy) .goal.hovered .door-preview {
   cursor: pointer;
   outline: none;
 }
+.goal [data-drop]:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
 .goal [data-drop].hovered {
   transform: none;
 }

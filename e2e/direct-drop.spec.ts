@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { unlock } from "./unlock";
 
 async function open(page: Page) {
   await page.goto("./");
@@ -129,4 +130,84 @@ test("reduced motion is one 150ms cross-fade, with no scaling or flight", async 
   await page.locator('.goal [data-drop="R"]').click();
   await page.clock.runFor(150);
   await expect(page.locator(".replay-tree")).toBeVisible();
+});
+
+test("restart room takes back a direct fill with an unchanged tray", async ({
+  page,
+}) => {
+  await open(page);
+  await page.locator('[data-key="0"]').click();
+  await page.locator('.goal [data-drop="L"]').click();
+  await expect(page.locator('.goal [data-part="L"] .seated')).toHaveCount(1);
+  await expect(page.locator(".chip")).toHaveCount(3);
+  await page.locator("#reset").click();
+  await expect(page.locator(".room")).not.toHaveClass(/reject/);
+  await expect(page.locator(".goal .seated")).toHaveCount(0);
+  await expect(page.locator(".chip")).toHaveCount(1);
+  await expect(page.locator("[data-key]")).toHaveCount(2);
+});
+
+test("a keyboard press on a hole ends the running animation first", async ({
+  page,
+}) => {
+  await unlock(page, 2);
+  await page.locator('[data-stage="2"]').click();
+  await page.locator(".goal").click();
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.locator('[data-key="1"]').click();
+  await page.locator('.goal [data-drop="L"]').click();
+  await page.clock.runFor(1000);
+  await page.locator('[data-key="0"]').click();
+  await page.locator('.goal [data-drop="R"]').click();
+  await page.clock.runFor(1200);
+  await expect(page.locator(".door-fit")).toBeAttached();
+  await page.locator('.goal [data-drop="R"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".door-fit")).toHaveCount(0);
+  await expect(page.locator(".replay-tree")).toBeVisible();
+});
+
+test("pair holes show a focus ring when reached by keyboard", async ({
+  page,
+}) => {
+  await open(page);
+  await page.locator(".goal").focus();
+  await page.keyboard.press("Tab");
+  const hole = page.locator('.goal [data-drop="L"]');
+  await expect(hole).toBeFocused();
+  expect(
+    await hole.evaluate((el) => [
+      el.matches(":focus-visible"),
+      getComputedStyle(el).outlineStyle,
+      getComputedStyle(el).outlineWidth,
+    ]),
+  ).toEqual([true, "solid", "3px"]);
+});
+
+test("a half seated on return plays its own haptic only once", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const calls: unknown[] = [];
+    Object.assign(window, { buzzes: calls });
+    Object.defineProperty(navigator, "vibrate", {
+      value: (pattern: unknown) => calls.push(pattern) > 0,
+    });
+  });
+  await open(page);
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  await page.locator('.goal [data-drop="L"]').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await page.evaluate(() =>
+    (window as unknown as { buzzes: [] }).buzzes.splice(0),
+  );
+  await page.locator('[data-key="0"]').click();
+  await page.locator(".goal").click();
+  await page.clock.runFor(2000);
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  expect(
+    await page.evaluate(() => (window as unknown as { buzzes: [] }).buzzes),
+  ).toEqual([25]);
 });

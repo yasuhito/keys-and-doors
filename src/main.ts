@@ -230,11 +230,10 @@ function commit(action: Action) {
         duplicate: resultIndex >= 0 && resultIndex < room.keys.length,
         reduced: reduced(),
         buzz,
-        done: last
-          ? completion
-          : () => {
-              finishMotion = undefined;
-            },
+        done: () => {
+          finishMotion = undefined;
+          if (last) completion(true);
+        },
       });
       return;
     }
@@ -267,13 +266,13 @@ function commit(action: Action) {
         done: () => {
           door.remove();
           finishMotion = undefined;
-          completion();
+          completion(true);
         },
       });
       return;
     }
     completion();
-    function completion() {
+    function completion(fitted = false) {
       if (state.rooms[0].proof) {
         if (doorBox && typeof rootGoal !== "string" && rootGoal.op === "→") {
           const door = document.createElement("span");
@@ -298,7 +297,7 @@ function commit(action: Action) {
           });
         } else complete();
       } else {
-        buzz(25);
+        if (!fitted) buzz(25);
         render();
       }
     }
@@ -427,7 +426,8 @@ function renderRoom() {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           e.stopPropagation();
-          target(tile);
+          endMotion();
+          if (tile.isConnected) target(tile);
         }
       };
     }

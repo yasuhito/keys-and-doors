@@ -94,6 +94,55 @@ describe("direct pair filling", () => {
     expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
     expect(s.rooms[0].keys).toHaveLength(1);
   });
+  it("room reset undoes direct fills even when the tray is unchanged", () => {
+    const entry = start("P ∧ Q", ["P", "Q"]);
+    const s = move(entry, { type: "fill", key: 0, side: "L" });
+    const reset = move(s, { type: "reset" });
+    expect(reset).toEqual(entry);
+    expect(() => move(reset, { type: "reset" })).toThrow();
+    let n = move(reset, { type: "fill", key: 1, side: "R" });
+    n = move(n, { type: "fill", key: 0, side: "L" });
+    expect(checkProof(n.rooms[0].proof!, n.initial)).toBe(true);
+  });
+  it("room reset restores the entry tray and drops halves filled from derived keys", () => {
+    const entry = start("R ∧ P", ["P ∧ R"]);
+    let s = move(entry, { type: "split", key: 0 });
+    s = move(s, { type: "fill", key: 2, side: "L" });
+    expect(move(s, { type: "reset" })).toEqual(entry);
+  });
+  it("room reset keeps progress made inside a half and its sibling's scope", () => {
+    let s = move(start("(P ∧ Q) ∧ R", ["P ∧ Q", "R"]), {
+      type: "intro",
+      side: "L",
+    });
+    s = move(s, { type: "split", key: 0 });
+    s = move(s, { type: "visit", room: 0 });
+    s = move(s, { type: "fill", key: 1, side: "R" });
+    const reset = move(s, { type: "reset" });
+    expect(reset.rooms).toHaveLength(3);
+    expect(reset.rooms[2].proof).toBeUndefined();
+    expect(reset.rooms[1].keys).toEqual(s.rooms[1].keys);
+    let n = move(reset, { type: "intro", side: "L" });
+    n = move(n, { type: "use", key: 0 });
+    expect(n.current).toBe(2);
+    n = move(n, { type: "use", key: 1 });
+    expect(checkProof(n.rooms[0].proof!, n.initial)).toBe(true);
+  });
+  it("room reset reopens an expanded half that was filled as a whole", () => {
+    let s = move(start("(P ∧ Q) ∧ R", ["P ∧ Q", "R"]), {
+      type: "intro",
+      side: "L",
+    });
+    s = move(s, { type: "intro" });
+    const inner = s.current;
+    s = move(s, { type: "visit", room: 0 });
+    s = move(s, { type: "fill", key: 0, side: "L" });
+    s = move(s, { type: "reset" });
+    expect(s.rooms[1].proof).toBeUndefined();
+    s = move(s, { type: "visit", room: inner });
+    for (const action of solve(s)!) s = move(s, action);
+    expect(checkProof(s.rooms[0].proof!, s.initial)).toBe(true);
+  });
 });
 describe("five rules", () => {
   it("assumption use matches exactly and never consumes keys", () => {

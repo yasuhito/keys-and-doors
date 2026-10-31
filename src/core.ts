@@ -112,7 +112,7 @@ export type Room = {
 export type State = { rooms: Room[]; current: number; initial: Formula[] };
 export type Action =
   | { type: "intro"; side?: "L" | "R" }
-  | { type: "decompose" }
+  | { type: "decompose"; path?: ("L" | "R")[] }
   | { type: "reset" }
   | { type: "use" | "split" | "lemma"; key: number }
   | { type: "apply"; key: number; target: number }
@@ -228,27 +228,13 @@ export function move(state: State, action: Action): State {
         parent.mode === "→I" ? s.rooms[parent.children[0]].ribbon : undefined,
     });
   };
-  if (action.type === "intro" || action.type === "decompose") {
-    const side = action.type === "intro" ? action.side : undefined;
-    if (
-      action.type === "decompose" &&
-      (typeof r.goal === "string" || r.goal.op !== "∧" || r.children.length)
-    )
-      throw Error("not an unsplit pair");
-    const f = r.goal;
-    if (r.children.length) {
-      const child = side
-        ? r.children[side === "L" ? 0 : 1]
-        : r.children.find((c) => !s.rooms[c].proof);
-      if (child === undefined || s.rooms[child].proof)
-        throw Error("closed half");
-      s.current = child;
-      return s;
-    }
+  const open = (index: number) => {
+    const room = s.rooms[index];
+    const f = room.goal;
     if (typeof f === "string") throw Error("atomic door");
-    r.mode = f.op === "∧" ? "∧I" : "→I";
+    room.mode = f.op === "∧" ? "∧I" : "→I";
     for (const goal of f.op === "∧" ? [f.left, f.right] : [f.right]) {
-      const child = openRoom(goal, r.keys, s.current);
+      const child = openRoom(goal, room.keys, index);
       if (f.op === "→") {
         child.ribbon = s.rooms.length;
         add(child, {
@@ -262,11 +248,41 @@ export function move(state: State, action: Action): State {
         });
         child.entry = structuredClone(child.keys);
       }
-      r.children.push(s.rooms.length);
+      room.children.push(s.rooms.length);
       s.rooms.push(child);
     }
-    if (action.type !== "decompose")
-      s.current = r.children[side === "R" && f.op === "∧" ? 1 : 0];
+  };
+  if (action.type === "decompose") {
+    const path = action.path ?? [];
+    let index = s.current;
+    for (let i = 0; ; i++) {
+      const room = s.rooms[index];
+      if (!room.children.length) {
+        if (typeof room.goal === "string" || room.goal.op !== "∧")
+          throw Error("not an unsplit pair");
+        open(index);
+      } else if (room.mode !== "∧I" || !path.length)
+        throw Error("not an unsplit pair");
+      if (i === path.length) break;
+      index = room.children[path[i] === "L" ? 0 : 1];
+      if (s.rooms[index].proof) throw Error("closed half");
+    }
+    s.current = index;
+    return s;
+  }
+  if (action.type === "intro") {
+    const side = action.side;
+    if (r.children.length) {
+      const child = side
+        ? r.children[side === "L" ? 0 : 1]
+        : r.children.find((c) => !s.rooms[c].proof);
+      if (child === undefined || s.rooms[child].proof)
+        throw Error("closed half");
+      s.current = child;
+      return s;
+    }
+    open(s.current);
+    s.current = r.children[side === "R" && r.mode === "∧I" ? 1 : 0];
     return s;
   }
   const key = r.keys[action.key];

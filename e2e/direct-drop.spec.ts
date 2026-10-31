@@ -253,3 +253,30 @@ test("nested joints zoom into a half and keep at most two doors in the row", asy
   await expect(page.locator(".split-doors .goal .joint")).toHaveCount(0);
   await expect(page.locator(".replay-tree")).toHaveCount(0);
 });
+
+test("one tap on a nested or already split half joint is one undo step and never rejects", async ({
+  page,
+}) => {
+  await unlock(page, 3);
+  await page.locator('[data-stage="3"]').click();
+  await page.locator(".goal").click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await page.locator('.joint-button[data-path="L"]').click();
+  await expect(page.locator(".split-doors .goal")).toHaveCount(2);
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  await page.locator("#undo").click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await expect(page.locator(".split-doors")).toHaveCount(0);
+  await expect(page.locator('.joint-button[data-path="L"]')).toHaveCount(1);
+  await page.locator('.joint-button[data-path=""]').click();
+  await page.locator('.goal[data-drop="L"] ~ .joint-button').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  await page.locator('.chip[data-room="1"]').click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await page.locator('.goal[data-drop="L"] ~ .joint-button').click();
+  await expect(page.locator(".room")).not.toHaveClass(/reject/);
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  await page.locator("#undo").click();
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await expect(page.locator(".split-doors .goal")).toHaveCount(2);
+});

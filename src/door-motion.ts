@@ -96,7 +96,9 @@ export function doorMotion(
       if (row)
         animate(row, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
     } else {
-      const joint = overlay.querySelector<SVGElement>(".joint");
+      const joint =
+        overlay.querySelector<SVGElement>(".joint.tapped") ??
+        overlay.querySelector<SVGElement>(".joint");
       if (joint) {
         const rect = joint.querySelectorAll("rect")[1];
         if (rect) {

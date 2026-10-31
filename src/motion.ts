@@ -12,15 +12,12 @@ type Options = {
   goal: boolean;
   before: string[];
   path: string;
-  pair?: boolean;
-  last?: boolean;
   source?: DOMRect;
   sourceShape?: DOMRect;
   lifted?: boolean;
   destination?: HTMLElement;
   duplicate?: boolean;
   intro?: boolean;
-  returning?: boolean;
   reduced: boolean;
   buzz: (n: number) => void;
   done: () => void;
@@ -34,13 +31,12 @@ export function fitMotion(o: Options): () => void {
   const w = o.goal ? 184 : 88,
     h = o.goal ? 137 : 66;
   const seated = [...o.before, o.path];
-  const final = o.pair && !o.last ? seated : [""];
   const svg = (filled: string[]) => picture(o.formula, w, h, o.goal, filled);
   o.object.innerHTML = svg(o.before);
   const base = o.object.querySelector<SVGSVGElement>(".picture")!;
   const overlay = document.createElement("span");
   overlay.className = "motion-layer";
-  overlay.innerHTML = svg(final);
+  overlay.innerHTML = svg([""]);
   o.object.append(overlay);
   const full = overlay.querySelector<SVGSVGElement>("svg")!;
   const animate = (
@@ -74,7 +70,7 @@ export function fitMotion(o: Options): () => void {
     later(150, finish);
     return finish;
   }
-  if (!o.intro && !o.returning) {
+  if (!o.intro) {
     base.querySelectorAll<SVGElement>(".glow[data-path]").forEach((halo) => {
       if ((halo.dataset.path ?? "").startsWith(o.path))
         animate(halo, [{ opacity: 1 }, { opacity: 0 }], 160, 0, "linear");
@@ -94,10 +90,8 @@ export function fitMotion(o: Options): () => void {
     if (!node.parentElement?.closest(".seated"))
       seat.append(node.cloneNode(true));
   });
-  if (o.intro || o.returning) {
-    const part = base.querySelector<SVGGElement>(
-      `[data-part="${o.returning ? o.path : "T"}"]`,
-    );
+  if (o.intro) {
+    const part = base.querySelector<SVGGElement>('[data-part="T"]');
     if (part) {
       const b = part.getBBox();
       const scale = Math.max(w / b.width, h / b.height);
@@ -135,19 +129,18 @@ export function fitMotion(o: Options): () => void {
     );
     copy.style.transformBox = "fill-box";
     copy.style.transformOrigin = "center";
-    if (!o.returning)
-      animate(
-        copy,
-        [
-          {
-            transform: `translate(${dx}px, ${dy}px) rotate(-5deg) scale(${startScale})`,
-          },
-          { transform: `translateY(${-depth}px) scale(1.04)` },
-        ],
-        220,
-        0,
-        curves.fly,
-      );
+    animate(
+      copy,
+      [
+        {
+          transform: `translate(${dx}px, ${dy}px) rotate(-5deg) scale(${startScale})`,
+        },
+        { transform: `translateY(${-depth}px) scale(1.04)` },
+      ],
+      220,
+      0,
+      curves.fly,
+    );
     // Non-overlapping effects: the settle replaces the completed fly at contact.
     const settle = animate(
       copy,
@@ -156,21 +149,14 @@ export function fitMotion(o: Options): () => void {
         { transform: "translateY(0) scale(1)" },
       ],
       120,
-      o.returning ? 360 : 220,
+      220,
     );
-    if (o.returning) animate(copy, [{ opacity: 0 }, { opacity: 1 }], 120, 360);
     settle.effect?.updateTiming({ fill: "forwards" });
-    if (o.source && !o.returning) {
+    if (o.source) {
       const rim = document.createElement("span");
       rim.className = "motion-rim";
       rim.innerHTML = card(
-        typeof o.formula === "string"
-          ? o.formula
-          : o.pair
-            ? o.path === "L"
-              ? o.formula.left
-              : o.formula.right
-            : o.formula.left,
+        typeof o.formula === "string" ? o.formula : o.formula.left,
       );
       document.body.append(rim);
       transient.push(rim);
@@ -191,163 +177,132 @@ export function fitMotion(o: Options): () => void {
     }
   }
   seatLayer.remove();
-  if (!o.intro) later(o.returning ? 360 : 220, () => o.buzz(25));
-  if (o.pair) {
-    if (o.last) {
-      const bar = full.querySelector<SVGGElement>(
-        ':scope > .cut[data-path=""] > .bridge > .seated',
-      )!;
-      base.querySelector(':scope > .cut[data-path=""] > .bridge')!.append(bar);
-      bar.setAttribute("class", "seated locking-bar");
-      const b = bar.getBoundingClientRect();
-      bar.style.transformBox = "fill-box";
-      bar.style.transformOrigin = "center";
-      animate(
-        bar,
-        [
-          { transform: b.width >= b.height ? "scaleX(0)" : "scaleY(0)" },
-          { transform: "scale(1)" },
-        ],
-        220,
-        o.returning ? 540 : 400,
-      );
-      later(o.returning ? 760 : 620, () => o.buzz(25));
-    }
-    later(
-      o.returning ? (o.last ? 820 : 480) : o.last ? 680 : 340,
-      o.last ? () => openDoor() : finish,
-    );
-  } else {
-    const face = o.goal
-      ? full.querySelector(':scope > .cut[data-path=""]')!
-      : full;
-    const arrow = face.querySelector(":scope > .arrow")!;
-    arrow.setAttribute("pathLength", "1");
-    arrow.setAttribute("stroke-dasharray", "1");
-    base.append(arrow);
+  if (!o.intro) later(220, () => o.buzz(25));
+  const face = o.goal
+    ? full.querySelector(':scope > .cut[data-path=""]')!
+    : full;
+  const arrow = face.querySelector(":scope > .arrow")!;
+  arrow.setAttribute("pathLength", "1");
+  arrow.setAttribute("stroke-dasharray", "1");
+  base.append(arrow);
+  animate(
+    arrow,
+    [{ strokeDashoffset: "1" }, { strokeDashoffset: "0" }],
+    220,
+    400,
+    curves.io,
+  );
+  const result = face.querySelector<SVGGElement>(":scope > .result")!;
+  base.append(result);
+  animate(result, [{ opacity: 0 }, { opacity: 1 }], 240, 680);
+  result.style.transformBox = "fill-box";
+  result.style.transformOrigin = "center";
+  animate(
+    result,
+    [
+      { transform: "scale(1)" },
+      { transform: "scale(1.04)", offset: 0.5 },
+      { transform: "scale(1)" },
+    ],
+    240,
+    920,
+    curves.io,
+  );
+  const rb = result.getBBox();
+  const sparkle = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "path",
+  );
+  sparkle.setAttribute(
+    "d",
+    "M0 -6L1.5 -1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5 -1.5Z",
+  );
+  sparkle.setAttribute("fill", "#FFE7A8");
+  const star = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  star.setAttribute("transform", `translate(${rb.x + rb.width} ${rb.y})`);
+  star.append(sparkle);
+  base.append(star);
+  animate(
+    sparkle,
+    [{ transform: "scale(0)" }, { transform: "scale(1)" }],
+    120,
+    920,
+  );
+  animate(
+    star,
+    [{ opacity: 1 }, { opacity: 0 }],
+    120,
+    1040,
+    "linear",
+  ).effect?.updateTiming({ fill: "forwards" });
+  // Hide the sparkle before its obtaining beat without scaling the result.
+  animate(star, [{ opacity: 0 }, { opacity: 1 }], 1, 920).effect?.updateTiming({
+    fill: "backwards",
+  });
+  later(o.intro ? 880 : 920, () => o.buzz(10));
+  if (o.destination) {
+    const to = o.destination.getBoundingClientRect();
+    const from = result.getBoundingClientRect();
+    const flight = document.createElement("span");
+    flight.className = "result-flight";
+    const formula = typeof o.formula === "string" ? o.formula : o.formula.right;
+    flight.innerHTML = `<span class="delivered-frame">${card(formula)}</span><svg class="delivered-shape" viewBox="${rb.x} ${rb.y} ${rb.width} ${rb.height}">${result.outerHTML}</svg>`;
+    document.body.append(flight);
+    transient.push(flight);
+    flight.style.cssText = `left:${from.x}px;top:${from.y}px;width:${from.width}px;height:${from.height}px`;
     animate(
-      arrow,
-      [{ strokeDashoffset: "1" }, { strokeDashoffset: "0" }],
-      220,
-      400,
-      curves.io,
-    );
-    const result = face.querySelector<SVGGElement>(":scope > .result")!;
-    base.append(result);
-    animate(result, [{ opacity: 0 }, { opacity: 1 }], 240, 680);
-    result.style.transformBox = "fill-box";
-    result.style.transformOrigin = "center";
-    animate(
-      result,
+      flight,
       [
-        { transform: "scale(1)" },
-        { transform: "scale(1.04)", offset: 0.5 },
-        { transform: "scale(1)" },
+        {
+          transform: "translate(0,0)",
+          width: `${from.width}px`,
+          height: `${from.height}px`,
+        },
+        {
+          transform: `translate(${to.x - from.x}px,${to.y - from.y}px)`,
+          width: `${to.width}px`,
+          height: `${to.height}px`,
+        },
       ],
-      240,
-      920,
+      300,
+      1160,
       curves.io,
     );
-    const rb = result.getBBox();
-    const sparkle = document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    sparkle.setAttribute(
-      "d",
-      "M0 -6L1.5 -1.5L6 0L1.5 1.5L0 6L-1.5 1.5L-6 0L-1.5 -1.5Z",
-    );
-    sparkle.setAttribute("fill", "#FFE7A8");
-    const star = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    star.setAttribute("transform", `translate(${rb.x + rb.width} ${rb.y})`);
-    star.append(sparkle);
-    base.append(star);
+    animate(flight, [{ opacity: 0 }, { opacity: 1 }], 1, 1160, "linear");
+    const frame = flight.querySelector<HTMLElement>(".delivered-frame")!;
+    animate(frame, [{ opacity: 0 }, { opacity: 1 }], 120, 1340);
     animate(
-      sparkle,
-      [{ transform: "scale(0)" }, { transform: "scale(1)" }],
-      120,
-      920,
-    );
-    animate(
-      star,
+      flight.querySelector(".delivered-shape")!,
       [{ opacity: 1 }, { opacity: 0 }],
       120,
-      1040,
-      "linear",
-    ).effect?.updateTiming({ fill: "forwards" });
-    // Hide the sparkle before its obtaining beat without scaling the result.
+      1340,
+    );
     animate(
-      star,
-      [{ opacity: 0 }, { opacity: 1 }],
-      1,
-      920,
-    ).effect?.updateTiming({ fill: "backwards" });
-    later(o.intro ? 880 : 920, () => o.buzz(10));
-    if (o.destination) {
-      const to = o.destination.getBoundingClientRect();
-      const from = result.getBoundingClientRect();
-      const flight = document.createElement("span");
-      flight.className = "result-flight";
-      const formula =
-        typeof o.formula === "string" ? o.formula : o.formula.right;
-      flight.innerHTML = `<span class="delivered-frame">${card(formula)}</span><svg class="delivered-shape" viewBox="${rb.x} ${rb.y} ${rb.width} ${rb.height}">${result.outerHTML}</svg>`;
-      document.body.append(flight);
-      transient.push(flight);
-      flight.style.cssText = `left:${from.x}px;top:${from.y}px;width:${from.width}px;height:${from.height}px`;
+      result,
+      [{ opacity: 1 }, { opacity: 0 }],
+      200,
+      1160,
+    ).effect?.updateTiming({ fill: "forwards" });
+    const seats = base.querySelectorAll(".seated");
+    seats.forEach((s) =>
+      animate(s, [{ opacity: 1 }, { opacity: 0 }], 200, 1160),
+    );
+    animate(arrow, [{ opacity: 1 }, { opacity: 0 }], 200, 1160);
+    if (o.duplicate)
       animate(
-        flight,
+        o.destination,
         [
-          {
-            transform: "translate(0,0)",
-            width: `${from.width}px`,
-            height: `${from.height}px`,
-          },
-          {
-            transform: `translate(${to.x - from.x}px,${to.y - from.y}px)`,
-            width: `${to.width}px`,
-            height: `${to.height}px`,
-          },
+          { transform: "scale(1)" },
+          { transform: "scale(1.04)", offset: 0.5 },
+          { transform: "scale(1)" },
         ],
-        300,
-        1160,
+        240,
+        1460,
         curves.io,
       );
-      animate(flight, [{ opacity: 0 }, { opacity: 1 }], 1, 1160, "linear");
-      const frame = flight.querySelector<HTMLElement>(".delivered-frame")!;
-      animate(frame, [{ opacity: 0 }, { opacity: 1 }], 120, 1340);
-      animate(
-        flight.querySelector(".delivered-shape")!,
-        [{ opacity: 1 }, { opacity: 0 }],
-        120,
-        1340,
-      );
-      animate(
-        result,
-        [{ opacity: 1 }, { opacity: 0 }],
-        200,
-        1160,
-      ).effect?.updateTiming({ fill: "forwards" });
-      const seats = base.querySelectorAll(".seated");
-      seats.forEach((s) =>
-        animate(s, [{ opacity: 1 }, { opacity: 0 }], 200, 1160),
-      );
-      animate(arrow, [{ opacity: 1 }, { opacity: 0 }], 200, 1160);
-      if (o.duplicate)
-        animate(
-          o.destination,
-          [
-            { transform: "scale(1)" },
-            { transform: "scale(1.04)", offset: 0.5 },
-            { transform: "scale(1)" },
-          ],
-          240,
-          1460,
-          curves.io,
-        );
-      later(1460, () => flight.remove());
-      later(o.duplicate ? 1700 : 1460, finish);
-    } else later(o.intro ? 1180 : 1220, () => openDoor());
-  }
+    later(1460, () => flight.remove());
+    later(o.duplicate ? 1700 : 1460, finish);
+  } else later(o.intro ? 1180 : 1220, () => openDoor());
   function openDoor() {
     const door = o.object;
     const box = door.getBoundingClientRect();

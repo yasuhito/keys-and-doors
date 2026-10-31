@@ -536,19 +536,13 @@ function renderRoom() {
         cancelled = false;
         return;
       }
-      const path = joint.dataset.path ?? "";
-      const drop = frame.querySelector<HTMLElement>(".goal")!.dataset.drop;
-      if (drop === "L" || drop === "R") {
-        commit({ type: "intro", side: drop });
-        endMotion();
-      }
-      for (const side of path) {
-        commit({ type: "decompose" });
-        endMotion();
-        commit({ type: "intro", side: side as "L" | "R" });
-        endMotion();
-      }
-      commit({ type: "decompose" });
+      const path = [
+        ...(dropSide === "L" || dropSide === "R" ? dropSide : ""),
+        ...(joint.dataset.path ?? ""),
+      ] as ("L" | "R")[];
+      visual.classList.add("tapped");
+      commit({ type: "decompose", path });
+      visual.classList.remove("tapped");
     };
     joint.onpointerdown = (event) => {
       pressing = true;

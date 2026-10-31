@@ -46,6 +46,25 @@ describe("direct pair filling", () => {
       ),
     ).toBe(true);
   });
+  it("splits every room along a joint path in one move and enters the deepest", () => {
+    const initial = start("(P ∧ Q) ∧ R", ["P", "Q", "R"]);
+    const nested = move(initial, { type: "decompose", path: ["L"] });
+    expect(nested.rooms[0].mode).toBe("∧I");
+    expect(nested.rooms[nested.current].mode).toBe("∧I");
+    expect(format(nested.rooms[nested.current].goal)).toBe("(P ∧ Q)");
+    expect(
+      nested.rooms[nested.current].children.map((c) =>
+        format(nested.rooms[c].goal),
+      ),
+    ).toEqual(["P", "Q"]);
+    const back = move(nested, { type: "visit", room: 0 });
+    const again = move(back, { type: "decompose", path: ["L"] });
+    expect(again.current).toBe(nested.current);
+    expect(again.rooms).toEqual(back.rooms);
+    expect(() => move(back, { type: "decompose" })).toThrow();
+    const filled = move(back, { type: "fill", key: 2, side: "R" });
+    expect(() => move(filled, { type: "decompose", path: ["R"] })).toThrow();
+  });
   it.each(["L", "R"] as const)(
     "fills %s first without leaving the pair and checks its proof",
     (side) => {

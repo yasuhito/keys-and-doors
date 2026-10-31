@@ -1,8 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title>And-elim: snap a pair key into its two keys</title>
-  <rect x="1.5" y="7" width="7" height="11" rx="2" transform="rotate(-10 5 12.5)"/>
-  <rect x="15.5" y="7" width="7" height="11" rx="2" transform="rotate(10 19 12.5)"/>
-  <path d="M9 12h1.5l.75-1M15 12h-1.5l-.75 1" stroke-width="2.5"/>
-  <circle cx="5" cy="12.5" r="1.5" fill="currentColor" stroke="none"/>
-  <circle cx="19" cy="12.5" r="1.5" fill="currentColor" stroke="none"/>
+  <path d="M8.5 12h1.75l.75-1M15.5 12h-1.75l-.75 1" stroke-width="2.5"/>
+  <circle cx="4.5" cy="12.5" r="3.5" fill="currentColor" stroke="none"/>
+  <circle cx="19.5" cy="12.5" r="3.5" fill="currentColor" stroke="none"/>
 </svg>

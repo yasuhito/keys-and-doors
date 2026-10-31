@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 test("touch on phones and keyboard on desktop", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("./");
   if (info.project.name === "phone") {
     await page.locator('[data-stage="0"]').tap();
     await page.locator(".goal").tap();

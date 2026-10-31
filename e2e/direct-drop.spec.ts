@@ -273,9 +273,21 @@ test("one tap on a nested or already split half joint is one undo step and never
   await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
   await page.locator('.chip[data-room="1"]').click();
   await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
+  await page.evaluate(() => {
+    const app = document.querySelector<HTMLElement>("#app")!;
+    app.dataset.rejected = "false";
+    new MutationObserver(() => {
+      if (app.querySelector(".room.reject")) app.dataset.rejected = "true";
+    }).observe(app, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  });
   await page.locator('.goal[data-drop="L"] ~ .joint-button').click();
-  await expect(page.locator(".room")).not.toHaveClass(/reject/);
   await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
+  await expect(page.locator("#app")).toHaveAttribute("data-rejected", "false");
   await page.locator("#undo").click();
   await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "1");
   await expect(page.locator(".split-doors .goal")).toHaveCount(2);

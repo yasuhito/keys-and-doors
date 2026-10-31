@@ -41,7 +41,21 @@ export type Proof = {
   inputs: Proof[];
   scope?: number;
 };
+const atoms = ["P", "Q", "R", "S"];
+function wellFormed(f: unknown): f is Formula {
+  if (typeof f === "string") return atoms.includes(f);
+  if (typeof f !== "object" || f === null) return false;
+  const { op, left, right } = f as Record<string, unknown>;
+  return (op === "∧" || op === "→") && wellFormed(left) && wellFormed(right);
+}
 export function checkProof(p: Proof, context: Formula[]): boolean {
+  if (
+    !p ||
+    !wellFormed(p.formula) ||
+    !Array.isArray(p.inputs) ||
+    !(p.scope === undefined || (Number.isInteger(p.scope) && p.scope > 0))
+  )
+    return false;
   const f = p.formula,
     a = p.inputs;
   switch (p.rule) {

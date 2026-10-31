@@ -7,6 +7,7 @@ import {
   solve,
   checkProof,
   type Proof,
+  type Formula,
 } from "./core";
 import one from "./stages/layer-01.json";
 import two from "./stages/layer-02.json";
@@ -86,6 +87,12 @@ describe("five rules", () => {
       expect(checkProof({ rule, formula: "Q", inputs: [p] }, ["P"])).toBe(
         false,
       );
+    for (const formula of ["", "PQ", "<b>", { op: "∨", left: "P", right: "P" }])
+      expect(
+        checkProof({ rule: "assume", formula, inputs: [] } as Proof, [
+          formula as Formula,
+        ]),
+      ).toBe(false);
   });
 });
 for (const stage of [...one.stages, ...two.stages])

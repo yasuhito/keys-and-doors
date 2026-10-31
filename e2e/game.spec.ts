@@ -108,4 +108,25 @@ test("drag copy, long press, undo and restart", async ({ page }) => {
   await expect(page.locator(".formula-bubble")).toBeVisible();
   await page.mouse.up();
   await expect(page.locator(".formula-bubble")).toHaveCount(0);
+  const longPress = async (selector: string) => {
+    const box = (await page.locator(selector).boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await expect(page.locator(".formula-bubble")).toBeVisible();
+    await page.mouse.up();
+    await expect(page.locator(".formula-bubble")).toHaveCount(0);
+  };
+  await longPress('[data-key="0"]');
+  await page.locator('[data-key="0"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(key).toHaveAttribute("aria-pressed", "true");
+  await page.locator('[data-key="0"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(key).toHaveAttribute("aria-pressed", "false");
+  await longPress('[data-key="0"]');
+  await key.click();
+  await expect(key).toHaveAttribute("aria-pressed", "true");
+  await page.locator(".goal").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "2");
 });

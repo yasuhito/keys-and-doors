@@ -54,3 +54,53 @@ it("survives unavailable storage and full quotas", () => {
     ),
   ).toBe(false);
 });
+it("rejects checked-shape proofs carrying markup in inner formulas or scope metadata", () => {
+  const html = "<img src=x onerror=alert(1)>";
+  const loop = { op: "→", left: html, right: html };
+  const smuggled = {
+    rule: "→E",
+    formula: "Q",
+    inputs: [
+      {
+        rule: "→I",
+        formula: { op: "→", left: loop, right: "Q" },
+        inputs: [{ rule: "assume", formula: "Q", inputs: [] }],
+      },
+      {
+        rule: "→I",
+        formula: loop,
+        inputs: [{ rule: "assume", formula: html, inputs: [] }],
+      },
+    ],
+  };
+  const withScope = (scope: unknown) => ({
+    rule: "→I",
+    formula: { op: "→", left: "P", right: "P" },
+    inputs: [{ rule: "assume", formula: "P", inputs: [], scope: 1 }],
+    scope,
+  });
+  const valid = [
+    { id: "stage-001", tasks: [{ goal: "P → P", assumptions: [] }] },
+    { id: "stage-q", tasks: [{ goal: "Q", assumptions: ["Q"] }] },
+  ];
+  expect(
+    load(
+      {
+        getItem: () =>
+          JSON.stringify({ proofs: { "stage-001": withScope(1) } }),
+      },
+      valid,
+    ).proofs["stage-001"],
+  ).toBeDefined();
+  for (const proofs of [
+    { "stage-q": smuggled },
+    { "stage-q": { rule: "assume", formula: "QQ", inputs: [] } },
+    { "stage-q": { rule: "assume", formula: "Q", inputs: "" } },
+    ...[html, 0, -1, 1.5, "1", null].map((scope) => ({
+      "stage-001": withScope(scope),
+    })),
+  ])
+    expect(load({ getItem: () => JSON.stringify({ proofs }) }, valid)).toEqual(
+      fresh(),
+    );
+});

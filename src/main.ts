@@ -10,7 +10,7 @@ import {
   type Formula,
   type Proof,
 } from "./core";
-import { card, icon, spoken } from "./picture";
+import { card, escape, icon, spoken } from "./picture";
 import { load, save } from "./progress";
 import first from "./stages/layer-01.json";
 import second from "./stages/layer-02.json";
@@ -103,7 +103,7 @@ function render() {
               const i = stages.findIndex((s) => s.id === stage.id),
                 active = i >= 0 && unlocked(i),
                 proof = progress.proofs[stage.id];
-              return `<div class="stage ${active ? "available" : "locked"} ${proof ? "cleared" : ""}"><button class="stage-door" data-stage="${i}" aria-label="${stage.id}${active ? "" : " ロック中"}" ${active ? "" : "disabled"}>${i >= 0 ? card(parse(stage.tasks[0].goal), "door") : `<span class="object door reserved">${icon("ui-lock")}</span>`}${pips(layer.stages.indexOf(stage) + 1)}</button>${proof ? button("ui-check", `${stage.id} 証明を再生`, `data-rewatch="${i}" class="badge"`) : !active ? `<span class="lock">${icon("ui-lock")}</span>` : ""}</div>`;
+              return `<div class="stage ${active ? "available" : "locked"} ${proof ? "cleared" : ""}"><button class="stage-door" data-stage="${i}" aria-label="${escape(stage.id)}${active ? "" : " ロック中"}" ${active ? "" : "disabled"}>${i >= 0 ? card(parse(stage.tasks[0].goal), "door") : `<span class="object door reserved">${icon("ui-lock")}</span>`}${pips(layer.stages.indexOf(stage) + 1)}</button>${proof ? button("ui-check", `${escape(stage.id)} 証明を再生`, `data-rewatch="${i}" class="badge"`) : !active ? `<span class="lock">${icon("ui-lock")}</span>` : ""}</div>`;
             })
             .join("")}</div></section>`,
       )
@@ -151,13 +151,13 @@ function renderRoom() {
     selected === undefined
       ? undefined
       : preview({ type: "split", key: selected });
-  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${format(room.goal)}" aria-label="部屋 ${i + 1}: ${spoken(room.goal)}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node")}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${format(r.goal)}" aria-label="扉: ${spoken(r.goal)}">${card(r.goal, "door")}${ghosts(usePreview)}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
+  app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${room.children.length || room.proof ? "disabled" : ""}>${card(room.goal, "node")}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div><button class="goal ${usePreview ? "valid" : ""}" data-drop="door" data-formula="${escape(format(r.goal))}" aria-label="扉: ${escape(spoken(r.goal))}">${card(r.goal, "door")}${ghosts(usePreview)}</button></div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
     .map((k, i) => {
       const forms =
         selected === undefined
           ? undefined
           : preview({ type: "apply", key: selected, target: i });
-      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${format(k.proof.formula)}" aria-label="鍵 ${i + 1}: ${spoken(k.proof.formula)}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${ghosts(forms)}</button>`;
+      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${ghosts(forms)}</button>`;
     })
     .join(
       "",
@@ -211,7 +211,7 @@ function renderRoom() {
 }
 function ribbon(ids: number[]) {
   return ids.length
-    ? `<span class="ribbons" aria-label="仮定の範囲 ${ids.join(",")}">${ids.map((id) => `<span style="--ribbon:${["#6FC7D1", "#F2B880", "#B8A6E8", "#C4DB7A"][(id - 1) % 4]}">${"·".repeat(((id - 1) % 4) + 1)}</span>`).join("")}</span>`
+    ? `<span class="ribbons" aria-label="仮定の範囲 ${escape(ids.join(","))}">${ids.map((id) => `<span style="--ribbon:${["#6FC7D1", "#F2B880", "#B8A6E8", "#C4DB7A"][(id - 1) % 4]}">${"·".repeat(((id - 1) % 4) + 1)}</span>`).join("")}</span>`
     : "";
 }
 function target(el: HTMLElement) {
@@ -265,10 +265,7 @@ function hint(tutorial = false) {
         : ".goal";
   const el = app.querySelector<HTMLElement>(selector);
   el?.classList.add("hint");
-  if (action.type === "lemma" && el) {
-    el.classList.add("lemma-hint");
-    el.ondblclick = () => commit(action);
-  }
+  if (action.type === "lemma") el?.classList.add("lemma-hint");
   const targetSelector =
     action.type === "use"
       ? ".goal"
@@ -305,6 +302,13 @@ function bindGestures() {
       pointer = -1,
       floating: HTMLElement | undefined,
       hovered: HTMLElement | undefined;
+    const swallow = (event: MouseEvent) => {
+      el.removeEventListener("click", swallow, true);
+      if (event.detail) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      }
+    };
     const clean = () => {
       clearTimeout(timer);
       document.querySelector(".formula-bubble")?.remove();
@@ -314,6 +318,7 @@ function bindGestures() {
     };
     el.onpointerdown = (e) => {
       if (e.button !== 0) return;
+      el.removeEventListener("click", swallow, true);
       downX = e.clientX;
       downY = e.clientY;
       held = dragged = false;
@@ -372,7 +377,7 @@ function bindGestures() {
       clean();
       if (held || dragged) {
         e.preventDefault();
-        el.onclick = (event) => event.preventDefault();
+        el.addEventListener("click", swallow, true);
         if (dragged) {
           const dest = document
             .elementFromPoint(e.clientX, e.clientY)
@@ -428,7 +433,7 @@ function renderReplay() {
   const proof = replay.at(-1)!;
   function tree(p: Proof): string {
     const visible = replay.indexOf(p) < step;
-    return `<div class="proof-node ${visible ? "visible" : ""}"><div class="premises">${p.inputs.map(tree).join("")}</div><div class="inference" data-formula="${format(p.formula)}" aria-label="${spoken(p.formula)}" tabindex="0">${card(p.formula, p.rule === "assume" ? "key" : "node")}${p.scope ? ribbon([p.scope]) : ""}${icon({ assume: "rule-assume", "∧I": "rule-and-intro", "∧E": "rule-and-elim", "→I": "rule-imp-intro", "→E": "rule-imp-elim" }[p.rule])}</div></div>`;
+    return `<div class="proof-node ${visible ? "visible" : ""}"><div class="premises">${p.inputs.map(tree).join("")}</div><div class="inference" data-formula="${escape(format(p.formula))}" aria-label="${escape(spoken(p.formula))}" tabindex="0">${card(p.formula, p.rule === "assume" ? "key" : "node")}${p.scope ? ribbon([p.scope]) : ""}${icon({ assume: "rule-assume", "∧I": "rule-and-intro", "∧E": "rule-and-elim", "→I": "rule-imp-intro", "→E": "rule-imp-elim" }[p.rule])}</div></div>`;
   }
   app.innerHTML = `<header>${button("ui-close", "ステージ一覧", 'id="close"')}${icon("ui-check")}${button("ui-formula", "数式の表示を切り替える", 'id="captions"')}</header><div class="replay-tree" aria-label="証明の木">${tree(proof)}</div><div class="replay-controls">${button("ui-step-back", "前の手", 'id="back"')}${button(playing ? "ui-pause" : "ui-play", "再生・停止", 'id="play"')}${button("ui-step-forward", "次の手", 'id="forward"')}</div><input class="scrubber" aria-label="証明の手順" type="range" min="1" max="${replay.length}" value="${step}"><footer>${button("ui-undo", "証明を戻して遊ぶ", `id="undo-clear" ${state?.rooms[0].proof === proof && history.length ? "" : "disabled"}`)}${button("ui-step-forward", "次のステージ", `id="next" class="next" ${unlocked(index + 1) ? "" : "disabled"}`)}</footer>`;
   app.querySelector<HTMLElement>("#close")!.onclick = () => {

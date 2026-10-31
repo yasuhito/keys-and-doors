@@ -91,9 +91,11 @@ export function picture(f: Formula, w = 184, h = 137): string {
   }
   return `<svg class="picture" viewBox="0 0 ${w} ${h}" aria-hidden="true">${pane(f, 0, 0, w, h, 0)}</svg>`;
 }
+export const escape = (text: string) =>
+  text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 export function card(
   f: Formula,
   role: "key" | "door" | "node" = "key",
 ): string {
-  return `<span class="object ${role}">${picture(f, role === "key" ? 88 : 184, role === "key" ? 66 : 137)}</span><span class="caption">${format(f)}</span>`;
+  return `<span class="object ${role}">${picture(f, role === "key" ? 88 : 184, role === "key" ? 66 : 137)}</span><span class="caption">${escape(format(f))}</span>`;
 }

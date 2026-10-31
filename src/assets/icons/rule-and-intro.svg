@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title>And-intro: fill both slots of a pair door</title>
-  <rect x="2" y="6" width="8" height="12" rx="2"/>
-  <rect x="14" y="6" width="8" height="12" rx="2"/>
+  <title>And-intro: fill both holes of a pair door</title>
   <path d="M10 12h4" stroke-width="3"/>
-  <circle cx="6" cy="12" r="1.75" fill="currentColor" stroke="none"/>
-  <circle cx="18" cy="12" r="1.75" fill="currentColor" stroke="none"/>
+  <circle cx="5.5" cy="12" r="4"/>
+  <circle cx="18.5" cy="12" r="4"/>
+  <path d="M2.4 10.2a3.6 3.6 0 0 1 6.2 0M15.4 10.2a3.6 3.6 0 0 1 6.2 0" stroke-width="2.5"/>
 </svg>

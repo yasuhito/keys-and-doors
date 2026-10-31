@@ -195,9 +195,9 @@ export function fitMotion(o: Options): () => void {
   if (o.pair) {
     if (o.last) {
       const bar = full.querySelector<SVGGElement>(
-        ":scope > .pair > .bridge > .seated",
+        ':scope > .cut[data-path=""] > .bridge > .seated',
       )!;
-      base.append(bar);
+      base.querySelector(':scope > .cut[data-path=""] > .bridge')!.append(bar);
       bar.setAttribute("class", "seated locking-bar");
       const b = bar.getBoundingClientRect();
       bar.style.transformBox = "fill-box";
@@ -218,7 +218,10 @@ export function fitMotion(o: Options): () => void {
       o.last ? () => openDoor() : finish,
     );
   } else {
-    const arrow = full.querySelector(":scope > .arrow")!;
+    const face = o.goal
+      ? full.querySelector(':scope > .cut[data-path=""]')!
+      : full;
+    const arrow = face.querySelector(":scope > .arrow")!;
     arrow.setAttribute("pathLength", "1");
     arrow.setAttribute("stroke-dasharray", "1");
     base.append(arrow);
@@ -229,7 +232,7 @@ export function fitMotion(o: Options): () => void {
       400,
       curves.io,
     );
-    const result = full.querySelector<SVGGElement>(":scope > .result")!;
+    const result = face.querySelector<SVGGElement>(":scope > .result")!;
     base.append(result);
     animate(result, [{ opacity: 0 }, { opacity: 1 }], 240, 680);
     result.style.transformBox = "fill-box";

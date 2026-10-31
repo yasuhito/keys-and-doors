@@ -411,7 +411,7 @@ function renderRoom() {
   if (typeof r.goal !== "string" && r.goal.op === "∧") {
     for (const side of ["L", "R"] as const) {
       const tile = app.querySelector<SVGElement>(
-        `.goal > .object > .picture > .pair > [data-part="${side}"]`,
+        `.goal > .object > .picture > .cut > .cut[data-path="${side}"]`,
       )!;
       tile.dataset.drop = side;
       if (selected !== undefined && preview(doorAction(selected, side)))
@@ -487,31 +487,35 @@ function renderRoom() {
 }
 function highlightHoles(key: number) {
   const held = state.rooms[state.current].keys[key].proof.formula;
-  app.querySelectorAll<HTMLElement>("[data-drop]").forEach((target) => {
-    const f =
-      target.dataset.drop === "door"
-        ? state.rooms[state.current].goal
-        : target.dataset.drop === "L" || target.dataset.drop === "R"
-          ? typeof state.rooms[state.current].goal !== "string"
-            ? target.dataset.drop === "L"
-              ? (state.rooms[state.current].goal as Exclude<Formula, string>)
-                  .left
-              : (state.rooms[state.current].goal as Exclude<Formula, string>)
-                  .right
-            : undefined
-          : target.dataset.key !== undefined
-            ? state.rooms[state.current].keys[Number(target.dataset.key)].proof
-                .formula
-            : undefined;
-    target.querySelectorAll<SVGElement>(".glow[data-path]").forEach((halo) => {
-      let part = f;
-      for (const step of halo.dataset.path ?? "") {
-        if (part && typeof part !== "string")
-          part = step === "L" || step === "S" ? part.left : part.right;
-      }
-      halo.classList.toggle("matching", !!part && equal(part, held));
+  app
+    .querySelectorAll<HTMLElement>('[data-drop="door"], [data-key]')
+    .forEach((target) => {
+      const f =
+        target.dataset.drop === "door"
+          ? state.rooms[state.current].goal
+          : target.dataset.drop === "L" || target.dataset.drop === "R"
+            ? typeof state.rooms[state.current].goal !== "string"
+              ? target.dataset.drop === "L"
+                ? (state.rooms[state.current].goal as Exclude<Formula, string>)
+                    .left
+                : (state.rooms[state.current].goal as Exclude<Formula, string>)
+                    .right
+              : undefined
+            : target.dataset.key !== undefined
+              ? state.rooms[state.current].keys[Number(target.dataset.key)]
+                  .proof.formula
+              : undefined;
+      target
+        .querySelectorAll<SVGElement>(".glow[data-path]")
+        .forEach((halo) => {
+          let part = f;
+          for (const step of halo.dataset.path ?? "") {
+            if (part && typeof part !== "string")
+              part = step === "L" || step === "S" ? part.left : part.right;
+          }
+          halo.classList.toggle("matching", !!part && equal(part, held));
+        });
     });
-  });
 }
 // A pair door shows each half it has already opened with its key seated.
 function filled(room: State["rooms"][number], snapshot = state) {

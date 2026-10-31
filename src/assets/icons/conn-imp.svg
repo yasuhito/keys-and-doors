@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-  <title>If-then: a slot shaped like a key, an arrow, and the grey thing you get</title>
-  <circle cx="11" cy="24" r="7.5"/>
-  <path d="M5.8 21.5a5.5 5.5 0 0 1 10.4 0" stroke-width="3.5"/>
-  <path d="M21 24h10M27 19l5 5-5 5"/>
-  <circle cx="40" cy="24" r="6" fill="currentColor" stroke="none" opacity="0.35"/>
+  <title>If-then: a plate holding a hole, an arrow, and the grey shape you get</title>
+  <path d="M21.49 19.5H29.21A9 9 0 1 1 29.21 28.5H21.49A10.5 10.5 0 1 1 21.49 19.5Z" stroke-width="2"/>
+  <circle cx="12" cy="24" r="5.5"/>
+  <path d="M7.6 21.5a5 5 0 0 1 8.8 0" stroke-width="3.5"/>
+  <path d="M20.5 24h8M25.5 20.5l3.5 3.5-3.5 3.5" stroke-width="2.25"/>
+  <circle cx="37" cy="24" r="5" fill="currentColor" stroke="none" opacity="0.35"/>
 </svg>

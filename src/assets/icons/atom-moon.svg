@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <title>Moon (atom Q)</title>
-  <path d="M22.63 7.05A17 17 0 1 0 40.95 25.37A13 13 0 1 1 22.63 7.05Z" fill="#2F6FD0" stroke="#1E4C96" stroke-width="2" stroke-linejoin="round"/>
+  <title>Moon (atom Q): the key is this shape</title>
+  <g transform="translate(1.92 0.5) scale(0.92)" stroke-linejoin="round">
+    <path d="M22.85 7.04A17 17 0 1 0 40.96 25.15A13 13 0 0 1 22.85 7.04Z" fill="#1E4C96" stroke="#1E4C96" stroke-width="2" transform="translate(0 2.6)"/>
+    <path d="M22.85 7.04A17 17 0 1 0 40.96 25.15A13 13 0 0 1 22.85 7.04Z" fill="#2F6FD0" stroke="#1E4C96" stroke-width="2"/>
+  </g>
 </svg>

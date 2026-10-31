@@ -176,23 +176,7 @@ footer button,
 }
 .object.key {
   width: 102px;
-  height: 80px;
-  background: #d9a441;
-  border: 3px solid #9c7024;
-  border-radius: 10px;
-  padding: 4px;
-  box-shadow: 0 3px 0 #0003;
-}
-.object.key:before {
-  content: "";
-  position: absolute;
-  width: 17px;
-  height: 22px;
-  border: 5px solid #d9a441;
-  border-radius: 50%;
-  left: -14px;
-  top: 24px;
-  box-shadow: -1px 0 #9c7024;
+  height: 77px;
 }
 .object.door {
   width: 222px;
@@ -344,9 +328,14 @@ footer button,
   gap: 16px 12px;
   max-height: 255px;
   overflow: auto;
-  padding: 7px 4px 12px 10px;
+  /* Room above the first row for a key's result preview, drawn over the tray line. */
+  margin-top: -28px;
+  padding: 35px 4px 12px 10px;
 }
 .key-button {
+  --key-w: 88px;
+  --key-h: 66px;
+  position: relative;
   padding: 4px 0;
   align-self: start;
   justify-self: center;
@@ -354,14 +343,8 @@ footer button,
   touch-action: none;
 }
 .key-button .object.key {
-  width: 88px;
-  height: 66px;
-}
-.key-button .key:before {
-  top: 19px;
-  left: -12px;
-  width: 15px;
-  height: 20px;
+  width: var(--key-w);
+  height: var(--key-h);
 }
 .key-button.selected {
   border-color: #fff;
@@ -382,10 +365,10 @@ footer button,
 }
 .fit-preview {
   position: absolute;
-  top: 11px;
+  top: 4px;
   left: 50%;
-  width: 74px;
-  height: 52px;
+  width: var(--key-w);
+  height: var(--key-h);
   transform: translateX(-50%);
   opacity: 0.5;
   pointer-events: none;
@@ -398,7 +381,7 @@ body:has(.drag-copy) .hovered .fit-preview {
 }
 .motion-layer {
   position: absolute;
-  inset: 4px;
+  inset: 0;
   pointer-events: none;
 }
 .motion-layer > .picture {
@@ -496,9 +479,6 @@ body:has(.drag-copy) .goal.hovered .door-preview {
   width: 48px;
   height: 36px;
   opacity: 0.5;
-}
-.ghosts .object.key:before {
-  display: none;
 }
 .ghosts .caption {
   display: none;
@@ -787,12 +767,9 @@ footer button[aria-pressed="true"] {
   .key-grid {
     gap: 22px;
   }
-  .key-button .object.key {
-    width: 102px;
-    height: 80px;
-  }
-  .key-button .key:before {
-    top: 24px;
+  .key-button {
+    --key-w: 102px;
+    --key-h: 77px;
   }
   .stage-grid {
     gap: 24px 40px;
@@ -829,8 +806,8 @@ footer button[aria-pressed="true"] {
   .door-area {
     min-height: 300px;
   }
-  .key-button .object.key {
-    width: 80px;
-    height: 60px;
+  .key-button {
+    --key-w: 80px;
+    --key-h: 60px;
   }
 }

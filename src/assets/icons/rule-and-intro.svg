@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-  <title>And-intro: split at the joint, then fill both doors</title>
+  <title>And-intro: split at the horizontal bar, then fill both doors</title>
   <path d="M1.5 19V9a4 4 0 0 1 8 0v10ZM14.5 19V9a4 4 0 0 1 8 0v10Z"/>
   <circle cx="5.5" cy="12" r="1.8"/>
   <circle cx="18.5" cy="12" r="1.8"/>
-  <path d="M9.5 12H11M13 12h1.5"/>
-  <rect x="11" y="8" width="2" height="8" rx="1" fill="currentColor" stroke="none"/>
+  <rect x="9" y="10.5" width="6" height="3" rx="1.5" fill="currentColor" stroke="none"/>
 </svg>

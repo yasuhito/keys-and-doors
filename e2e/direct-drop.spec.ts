@@ -44,16 +44,15 @@ for (const gesture of ["drag", "tap-tap"] as const) {
     await expect(page.locator(".chip.here")).toHaveAttribute("data-room", "0");
     await expect(half(page, "L").locator(".seated")).toHaveCount(1);
     await expect(half(page, "R").locator(".seated")).toHaveCount(0);
-    await expect(page.locator('.coupler .tab[data-side="L"]')).toHaveClass(
-      /lit/,
-    );
+    await expect(page.locator(".and-bar")).not.toHaveClass(/lit/);
+    await expect(page.locator(".bar-halo")).toHaveCSS("opacity", "0");
     await expect(page.locator("[data-key]")).toHaveCount(2);
     await page.locator("#undo").click();
     await expect(page.locator(".goal .seated")).toHaveCount(0);
     if (gesture === "drag") await drag(page, 1, "R");
     else await fill(page, 1, "R");
     await fill(page, 0, "L");
-    await expect(page.locator(".coupler.lit")).toBeAttached();
+    await expect(page.locator(".and-bar.lit")).toBeAttached();
     await expect(page.locator(".replay-tree")).toBeVisible();
     await page.locator("#close").click();
     await expect(page.locator('[data-rewatch="0"]')).toBeVisible();
@@ -67,7 +66,8 @@ test("unsplit single-key misses hint at the joint; split is undoable and each ne
   await open(page, false);
   await page.locator('[data-key="0"]').click();
   await expect(page.locator(".goal .glow.matching")).toHaveCount(0);
-  await expect(page.locator(".joint-hint")).toHaveCount(1);
+  await expect(page.locator(".joint-button")).not.toHaveClass(/hint/);
+  await expect(page.locator(".empty-slot")).toHaveCount(0);
   await page.locator(".goal").click({ position: { x: 30, y: 90 } });
   await expect(page.locator(".chip")).toHaveCount(1);
   await expect(page.locator(".replay-tree")).toHaveCount(0);
@@ -75,7 +75,7 @@ test("unsplit single-key misses hint at the joint; split is undoable and each ne
   await expect(page.locator(".split-doors .goal")).toHaveCount(2);
   for (const side of ["L", "R"] as const)
     await expect(half(page, side).locator('.cut[data-path=""]')).toHaveCount(1);
-  await expect(page.locator(".coupler")).toBeVisible();
+  await expect(page.locator(".and-bar")).toBeVisible();
   await page.locator("#undo").click();
   await expect(page.locator(".split-doors")).toHaveCount(0);
   await expect(page.locator(".joint-button")).toHaveCount(1);
@@ -111,7 +111,7 @@ test("undo during the final coupler light restores the unfinished pair", async (
   await open(page);
   await fill(page, 0, "L");
   await fill(page, 1, "R");
-  await expect(page.locator(".coupler.lit")).toBeAttached();
+  await expect(page.locator(".and-bar.lit")).toBeAttached();
   await page.locator("#undo").click();
   await expect(page.locator(".replay-tree")).toHaveCount(0);
   await expect(half(page, "L").locator(".seated")).toHaveCount(1);

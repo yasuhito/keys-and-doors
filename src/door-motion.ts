@@ -1,30 +1,35 @@
-// Presentation only: the proof transition has already happened before this runs.
+// Presentation only: proof transitions and independent subgoals belong to core.ts.
+const curve = "cubic-bezier(.65,0,.35,1)";
+function transitionSnapshot(before: HTMLElement) {
+  before.className = "door-transition";
+  before.inert = true;
+  before.setAttribute("aria-hidden", "true");
+  before
+    .querySelectorAll(".joint-button,.tutorial-hand")
+    .forEach((el) => el.remove());
+  before.querySelectorAll("[data-drop],[data-formula]").forEach((el) => {
+    el.removeAttribute("data-drop");
+    el.removeAttribute("data-formula");
+  });
+  before.querySelectorAll(".goal").forEach((el) => {
+    el.classList.remove("goal");
+    el.classList.add("transition-goal");
+  });
+}
 export function joinDoors(
   area: HTMLElement,
   before: HTMLElement,
   reduced: boolean,
   done: () => void,
 ): () => void {
-  before.className = "door-transition";
-  before.inert = true;
-  before.setAttribute("aria-hidden", "true");
-  before
-    .querySelectorAll(".joint-button")
-    .forEach((element) => element.remove());
-  before.querySelectorAll("[data-drop],[data-formula]").forEach((element) => {
-    element.removeAttribute("data-drop");
-    element.removeAttribute("data-formula");
-  });
-  before.querySelectorAll(".goal").forEach((element) => {
-    element.classList.remove("goal");
-    element.classList.add("transition-goal");
-  });
+  transitionSnapshot(before);
   area.append(before);
   const duration = reduced ? 150 : 300;
   const animations = [
     before.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration,
       fill: "both",
+      easing: reduced ? "linear" : curve,
     }),
   ];
   if (!reduced)
@@ -35,7 +40,7 @@ export function joinDoors(
             { transform: "translateX(0)" },
             { transform: `translateX(${i ? -43.5 : 43.5}px)` },
           ],
-          { duration, easing: "cubic-bezier(.65,0,.35,1)", fill: "both" },
+          { duration, easing: curve, fill: "both" },
         ),
       );
     });
@@ -44,7 +49,7 @@ export function joinDoors(
     if (ended) return;
     ended = true;
     clearTimeout(timer);
-    animations.forEach((animation) => animation.cancel());
+    animations.forEach((a) => a.cancel());
     before.remove();
     done();
   };
@@ -63,102 +68,34 @@ export function doorMotion(
   const animations: Animation[] = [];
   const transient: Element[] = [];
   const animate = (
-    element: Element,
+    el: Element,
     frames: Keyframe[],
     options: KeyframeAnimationOptions,
   ) => {
-    animations.push(element.animate(frames, { fill: "both", ...options }));
+    animations.push(
+      el.animate(frames, {
+        fill: "both",
+        easing: reduced ? "linear" : curve,
+        ...options,
+      }),
+    );
   };
-  const curve = "cubic-bezier(.65,0,.35,1)";
   const row = area.querySelector<HTMLElement>(".split-doors");
   let overlay: HTMLElement | undefined;
   if (split && before) {
     overlay = before;
-    overlay.className = "door-transition";
-    overlay.setAttribute("aria-hidden", "true");
-    overlay.inert = true;
-    overlay
-      .querySelectorAll(".joint-button,.tutorial-hand")
-      .forEach((element) => element.remove());
-    overlay.querySelectorAll(".goal").forEach((element) => {
-      element.classList.remove("goal");
-      element.classList.add("transition-goal");
-    });
-    overlay
-      .querySelectorAll("[data-drop],[data-formula]")
-      .forEach((element) => {
-        element.removeAttribute("data-drop");
-        element.removeAttribute("data-formula");
-      });
+    transitionSnapshot(overlay);
     area.append(overlay);
-    if (reduced) {
-      animate(overlay, [{ opacity: 1 }, { opacity: 0 }], { duration: 150 });
-      if (row)
-        animate(row, [{ opacity: 0 }, { opacity: 1 }], { duration: 150 });
-    } else {
-      const joint =
-        overlay.querySelector<SVGElement>(".joint.tapped") ??
-        overlay.querySelector<SVGElement>(".joint");
-      if (joint) {
-        const rect = joint.querySelectorAll("rect")[1];
-        if (rect) {
-          const x = Number(rect.getAttribute("x")),
-            y = Number(rect.getAttribute("y"));
-          const w = Number(rect.getAttribute("width")),
-            h = Number(rect.getAttribute("height"));
-          const seam = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "path",
-          );
-          seam.setAttribute(
-            "d",
-            h >= w ? `M${x + w / 2} ${y}v${h}` : `M${x} ${y + h / 2}h${w}`,
-          );
-          seam.setAttribute("stroke", "#FFE7A8");
-          seam.setAttribute("stroke-width", "3");
-          seam.setAttribute("stroke-linecap", "round");
-          seam.setAttribute("pathLength", "1");
-          seam.setAttribute("stroke-dasharray", "1");
-          joint.append(seam);
-          animate(
-            seam,
-            [{ strokeDashoffset: "1" }, { strokeDashoffset: "0" }],
-            { duration: 160, easing: curve },
-          );
-        }
-      }
-      animate(overlay, [{ opacity: 1 }, { opacity: 0 }], {
-        delay: 220,
-        duration: 200,
+    animate(overlay, [{ opacity: 1 }, { opacity: 0 }], {
+      delay: reduced ? 0 : 180,
+      duration: reduced ? 150 : 200,
+    });
+    if (row) {
+      animate(row, [{ opacity: 0 }, { opacity: 1 }], {
+        delay: reduced ? 0 : 280,
+        duration: reduced ? 150 : 200,
       });
-      if (row) {
-        row
-          .querySelectorAll<SVGElement>(
-            ".coupler > rect:not(.tab), .coupler > path",
-          )
-          .forEach((strip) => {
-            strip.style.transformBox = "fill-box";
-            strip.style.transformOrigin = "center";
-            animate(
-              strip,
-              [{ transform: "scaleY(1.53)" }, { transform: "scaleY(1)" }],
-              { delay: 360, duration: 160, easing: curve },
-            );
-          });
-        row.querySelectorAll<SVGElement>(".coupler .tab").forEach((tab) => {
-          tab.style.transformBox = "fill-box";
-          tab.style.transformOrigin =
-            tab.dataset.side === "L" ? "right center" : "left center";
-          animate(
-            tab,
-            [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
-            { delay: 360, duration: 160, easing: "cubic-bezier(.22,1,.36,1)" },
-          );
-        });
-        animate(row, [{ opacity: 0 }, { opacity: 1 }], {
-          delay: 320,
-          duration: 200,
-        });
+      if (!reduced) {
         row.querySelectorAll(".goal-frame").forEach((leaf, i) => {
           animate(
             leaf,
@@ -166,9 +103,27 @@ export function doorMotion(
               { transform: `translateX(${i ? -43.5 : 43.5}px)` },
               { transform: "translateX(0)" },
             ],
-            { delay: 220, duration: 300, easing: curve },
+            { delay: 180, duration: 300 },
           );
         });
+        const old =
+          overlay.querySelector(".joint.tapped") ??
+          overlay.querySelector(".joint");
+        const bar = row.querySelector(".and-bar");
+        if (old && bar) {
+          const from = old.getBoundingClientRect(),
+            to = bar.getBoundingClientRect();
+          animate(
+            bar,
+            [
+              {
+                transform: `translateX(${from.x + from.width / 2 - to.x - to.width / 2}px)`,
+              },
+              { transform: "translateX(0)" },
+            ],
+            { delay: 180, duration: 300 },
+          );
+        }
       }
     }
   } else {
@@ -176,13 +131,13 @@ export function doorMotion(
       `.goal[data-drop="${seat?.side}"] .seated`,
     );
     if (seated) {
-      if (reduced || !seat?.source) {
+      if (reduced || !seat?.source)
         animate(seated, [{ opacity: 0 }, { opacity: 1 }], {
           duration: reduced ? 150 : 340,
         });
-      } else {
-        const svg = seated.ownerSVGElement!;
-        const box = seated.getBoundingClientRect();
+      else {
+        const svg = seated.ownerSVGElement!,
+          box = seated.getBoundingClientRect();
         const unit =
           svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
         const source = seat.source;
@@ -233,52 +188,48 @@ export function doorMotion(
         );
       }
     }
-    area
-      .querySelectorAll(`.coupler .tab[data-side="${seat?.side}"]`)
-      .forEach((tab) => {
-        animate(tab, [{ fill: "#D9A441" }, { fill: "#FFE7A8" }], {
+    if (cleared) {
+      const bar = row?.querySelector<SVGElement>(".and-bar");
+      const face = bar?.querySelector(".joint-face rect");
+      if (face)
+        animate(face, [{ fill: "#D9A441" }, { fill: "#FFE7A8" }], {
           delay: reduced ? 0 : 400,
           duration: reduced ? 150 : 220,
         });
-      });
-    if (cleared) {
-      const coupler = area.querySelector<SVGElement>(".coupler");
-      const face = coupler?.querySelector(".coupler-face");
-      if (face)
-        animate(face, [{ fill: "#D9A441" }, { fill: "#FFE7A8" }], {
-          delay: reduced ? 0 : 620,
-          duration: reduced ? 150 : 1,
+      const halo = bar?.querySelector(".bar-halo");
+      if (halo)
+        animate(halo, [{ opacity: 0 }, { opacity: 0.6 }], {
+          delay: reduced ? 0 : 400,
+          duration: reduced ? 150 : 220,
         });
-      if (coupler && !reduced) {
-        coupler.style.transformBox = "fill-box";
-        coupler.style.transformOrigin = "center";
+      if (bar && !reduced) {
+        bar.style.transformBox = "fill-box";
+        bar.style.transformOrigin = "center";
         animate(
-          coupler,
+          bar,
           [
             { transform: "scale(1)" },
             { transform: "scale(1.04)" },
             { transform: "scale(1)" },
           ],
-          { delay: 620, duration: 240, easing: curve },
+          { delay: 620, duration: 240 },
         );
       }
       area.classList.add("open-pair");
-      area.querySelectorAll(".object.door").forEach((door) => {
-        animate(
-          door,
-          reduced
-            ? [{ opacity: 1 }, { opacity: 0 }]
-            : [
-                { transform: "perspective(600px) rotateY(0)" },
-                { transform: "perspective(600px) rotateY(-65deg)" },
-              ],
-          {
-            delay: reduced ? 0 : 920,
-            duration: reduced ? 150 : 400,
-            easing: reduced ? "linear" : curve,
-          },
+      area
+        .querySelectorAll(".object.door")
+        .forEach((door) =>
+          animate(
+            door,
+            reduced
+              ? [{ opacity: 1 }, { opacity: 0 }]
+              : [
+                  { transform: "perspective(600px) rotateY(0)" },
+                  { transform: "perspective(600px) rotateY(-65deg)" },
+                ],
+            { delay: reduced ? 0 : 920, duration: reduced ? 150 : 400 },
+          ),
         );
-      });
     }
   }
   let finished = false;
@@ -286,14 +237,14 @@ export function doorMotion(
     if (finished) return;
     finished = true;
     clearTimeout(timer);
-    animations.forEach((animation) => animation.cancel());
-    transient.forEach((element) => element.remove());
+    animations.forEach((a) => a.cancel());
+    transient.forEach((el) => el.remove());
     overlay?.remove();
     done();
   };
   const timer = setTimeout(
     finish,
-    reduced ? 150 : split ? 520 : cleared ? 1320 : 620,
+    reduced ? 150 : split ? 480 : cleared ? 1320 : 340,
   );
   return finish;
 }

@@ -26,6 +26,26 @@ describe("formula grammar", () => {
   );
 });
 describe("direct pair filling", () => {
+  it("stage-001 rejects either single assumption on an unsplit AND without mutating its proof state", () => {
+    const initial = start("P ∧ Q", ["P", "Q"]);
+    const snapshot = structuredClone(initial);
+    for (const key of [0, 1]) {
+      expect(() => move(initial, { type: "use", key })).toThrow("mismatch");
+      expect(() =>
+        move(initial, { type: "fill", key, side: key ? "R" : "L" }),
+      ).toThrow("split the door first");
+    }
+    expect(initial).toEqual(snapshot);
+    const split = move(initial, { type: "decompose" });
+    const first = move(split, { type: "fill", key: 0, side: "L" });
+    expect(first.rooms[0].proof).toBeUndefined();
+    const complete = move(first, { type: "fill", key: 1, side: "R" });
+    expect(complete.rooms[0].proof?.rule).toBe("∧I");
+    expect(
+      complete.rooms[0].proof?.inputs.map((p) => format(p.formula)),
+    ).toEqual(["P", "Q"]);
+    expect(checkProof(complete.rooms[0].proof!, initial.initial)).toBe(true);
+  });
   it("requires a committed decomposition and cannot clear a split goal with a whole key", () => {
     const initial = start("P ∧ Q", ["P", "Q", "P ∧ Q"]);
     expect(() => move(initial, { type: "fill", key: 0, side: "L" })).toThrow(

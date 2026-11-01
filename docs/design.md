@@ -8,7 +8,7 @@ Scope: propositional logic with the five moves below, eight stages.
 | --- | --- |
 | Assumption use | Drop a key into the door's hole of the same shape |
 | And-intro (∧I) | Tap the brass bar of an AND door: it splits into door, bar, door; then fill each door's hole |
-| And-elim (∧E) | Tap the brass bar of a joined key in the tray: you get both keys (decided, not built yet; until then, drop the joined key on the empty slot, 6.4) |
+| And-elim (∧E) | Tap the brass bar of a joined key in the tray: you get both keys, keeping the joined key (6.4) |
 | If-intro (→I) | Tap an if-then door: you borrow the key its hole wants, then make its grey half |
 | If-elim (→E) | Fit a key into the hole of an if-then key: its grey half fills with colour and becomes a new key |
 
@@ -194,7 +194,7 @@ An unsplit AND door accepts **no single key**. Tapping its bar splits it into tw
 | Thickness | 18% of `s`, at least 4.5 px. Centred on the row's centre line |
 | Face | `brass`, 1 px `brass-dark` edge. When the thickness is at least 9 px: two grooves at 1/3 and 2/3 of its length, across the bar, 1 px `brass-dark`, inset 2.5 px from the top and bottom edges. No grooves below 9 px (tray keys) |
 | Raised | The strip in `brass-dark`, moved down 2 px, behind the face. It is raised like a key (2.5), never recessed |
-| Hit target | A square of `TOUCH_TARGET_PX` (48 × 48), centred on the bar, never smaller, also for a tiny bar: on an unsplit door, and on a joined key in the tray once tapping a key's bar is built (6.4). Inside the square the bar wins over what lies under it. A bar between split doors has no hit target |
+| Hit target | A square of `TOUCH_TARGET_PX` (48 × 48), centred on the bar, never smaller, also for a tiny bar: on an unsplit door, and on a joined key in the tray (6.4). Inside the square the bar wins over what lies under it. A bar between split doors has no hit target |
 | Element | A `<button class="joint">` labelled with the formula in words, for example "split sun and moon". No visible text. Enter or Space taps it |
 
 **The row on the door.** The visible row (left shape, gap, right shape) is centred in the panel's content box (the panel inset by 8% of its shorter side, 2.4). The bar therefore sits where the gap falls, not necessarily at the panel centre. On a key the same row is drawn in colour with the same constants. When an AND is nested inside another, the inner pair sits on a small platform instead of brackets (decided); the platform's look (open item 34), whether inner bars are flat until they become outermost (open item 4), and how pictures shrink or fold when they do not fit (open item 5) are not decided here.
@@ -357,7 +357,7 @@ Settings is the only screen that may use words, because it is reached rarely and
 | Tap | Brass bar of an unsplit AND door | And-intro: the door splits into door, bar, door (2.8) |
 | Drag | Key → the hole of a split door | That half is filled (assumption use in that half) |
 | Drag | Key A → hole of an if-then key A → B | If-elim: new key B |
-| Drag | Pair key A ∧ B → empty tray slot | And-elim: new keys A and B |
+| Tap | Brass bar of a joined tray key A ∧ B | And-elim: copy keys A and B, retaining the joined key (6.4) |
 | Tap | The hole of a split door | Enter a room whose door is that half |
 | Tap | If-then door A → B | If-intro: borrow key A, enter a room with door B |
 | Double tap | If-then key A → B | Enter a room whose door is A, to make the key its hole wants |
@@ -388,9 +388,8 @@ With nothing selected, tapping a door's hole means intro (section 5.4). With a k
 | --- | --- |
 | Door hole of the same shape | The key drawn seated in the hole at 50%; a thin line of `light` shows at the door's edge if this fills the door |
 | Hole of an if-then key | The filled picture at 50% over the key (key seated, arrow lit, result in colour), a ghost of the new key in the slot where it will land, a dashed `ok` line to it, and the if-elim icon |
-| Empty slot (pair key) | Ghosts of both halves in the next two free slots, with the and-elim icon |
 
-If the result is a key that is already in the tray, the preview highlights the existing key instead of drawing a ghost. Dropping then just pulses that key; no duplicate is added.
+If the result is a key that is already in the tray, the preview highlights the existing key instead of drawing a ghost. Dropping then just pulses that key; no duplicate is added. The joined key's bar has no drop preview; its already-held results use the glow-only feedback in 6.4.
 
 ### 5.4 Tapping a door (introduction)
 
@@ -480,19 +479,29 @@ Total: 1320 ms, within the 1.7 s limit (8).
 
 **A whole joined key** on an unsplit door (open item 7, 2.8): it seats as one piece (6.1), its bar exactly over the door's bar, then the door opens as in 6.5.
 
-### 6.4 Snapping a pair key (and-elim)
+### 6.4 Copying a joined key (and-elim)
 
-![And-elim storyboard](mockups/snap.svg)
+Tap the joined key's brass bar in the tray. The joined key stays, and the left then right result is appended to the next available tray cells. State commits at release (0 ms), once, before presentation. Existing results are never duplicated. There is no empty slot, split drop target, selection preview or ghost result for this operation. Doors must still be split first, then filled one hole at a time.
 
 | Time (ms) | What moves |
 | --- | --- |
-| 0 to 150 | The dragged pair key flies onto the empty slot |
-| 150 to 250 | The bar snaps in the middle: a white sparkle at the break, and the two shapes, each keeping a stub of the bar, tilt ±12° and move 4 px apart |
-| 250 to 550 | The stubs fade out (100 ms) and the two shapes fly to the next two free slots, each scaling to the tray key size |
+| 0 to 120 | The bar face returns from its pressed position (`out`). Medium haptic if a result is new |
+| 120 to 180 | Beat |
+| 180 to 480 | Copies fly simultaneously from the joined key's two shapes to their new cells (`in-out`), growing from the measured source shape size to full size. Their path bows upward 8 CSS px, highest at 330. New cell pictures stay hidden |
+| 380 to 480 | The flying copies' thickness fades from 0 to 1 (`out`) |
+| 480 | Copies disappear and the identical destination pictures appear, without a pixel jump |
 
-The pair key stays in its slot.
+**Already held results (provisional, open item 29).** The bar stays enabled. Each held result glows once, without scaling, from 180 to 420 ms: opacity 0 → 0.6 → 0, peak at 300 (`in-out`). The outline is grown 4 drawing units with a 2 px blur, `#FFE7A8`, like the bar halo. If neither result is new, play a light haptic at 180 instead of the medium haptic at 0. With one missing result, only that copy flies and the other glows. Duplicate-only taps do not add undo entries.
 
-**Status.** Decided (11/1): the empty slot goes away, and a joined key is split by tapping its own bar in the tray. The motion for that is not specified yet, so the table above stays the runtime behaviour. Until the tap is built, the slot is shown only while the tray holds a joined key (14.8).
+**Input.** A sibling `.key-joint.joint-button` overlays the `.key-button` inside a `.key-cell`, never a nested button. Its target is `TOUCH_TARGET_PX` square, centred on the outer `.bridge[data-path=""]`, updated by `ResizeObserver`. The target wins inside the square, even over an atom. Only the brass face sinks 1.5 drawing units in 80 ms (`out`), returning in 120 ms. Moving more than 8 CSS px from the initial press cancels the press and starts dragging the whole key. Holding for 450 ms cancels the split, returns the face and shows only the formula bubble. Outside the target, selection and dragging work as before. A split clears any selection. Keyboard focus uses the existing 2 px `#ffe7a8` ring, inset 8 px. Key labels are `鍵を分ける: ${spoken(formula)}`; door labels are unchanged. New input finishes all running presentation before being interpreted (6.2). Undo removes the new results together, fading out over 150 ms (`linear`).
+
+**Hints.** Reuse `wobbleBar()` / `AND_BAR_HINT` on the key's outer bridge, never moving its target. At idle 2500 ms wobble the door bar, then after its 280 ms wobble and a provisional 60 ms beat wobble the useful key bar (2840 ms). Repeat every 6000 ms until first touch. If the door is already split, wobble only the key. The hint button follows this same door-then-key order when both need splitting, or just the key when that is the next useful action. A joined key dropped unsuccessfully onto a split door returns over 200 ms, then its bar wobbles over 200 to 480, without vibration. Never hint a key whose two results are already held.
+
+**Reduced motion.** Keep the 1.5-unit press. After the 0 to 120 return, new results fade in at their own cells over 150 ms (`linear`), total 270, without flight, arc or scaling. Held-result glow runs 0 → 0.6 over 150 ms then immediately back to 0 over 150 ms (`linear`), total 300. All wobbles are disabled without replacement. Haptics remain. Flights, glow and reduced fades use `element.animate()`, not CSS animations, so `.reduced * !important` does not suppress them.
+
+**Stage-002 layout.** The tray initially holds only `P ∧ Q`. After splitting it holds the unchanged joined key, sun, moon, in one three-column row on phone and desktop. The goal is `Q ∧ P`: split the door and insert moon left, sun right. Key drawings are 88 × 66; at width 390 the bar is centred at (48.68, 31.35). The supplied visual reference describes joined atoms of 36.05 and single atoms of 54.0 units (scale 0.668). Existing `picture.ts` geometry actually draws the joined atoms at about 33.17 units (scale about 0.614). That geometry is preserved; flights derive their source scale and position from `getBoundingClientRect()` rather than imposing the reference's numeric scale. `data-key-part` attributes identify silhouettes without adding SVG groups, including engraved leaves and compound halves. At desktop `--key-w: 102px`, but the target stays 48 × 48 CSS px. Brass and edges retain `#D9A441` / `#9C7024`, without idle light or selection light. Stage-001's appearance and interactions remain unchanged.
+
+Timing and motion values live in `src/tuning.ts`: `KEY_SPLIT` holds specified values; `KEY_SPLIT_PROVISIONAL` explicitly names the provisional 60 ms hint gap and held-flash policy (240 ms, opacity 0.6, reduced halves 150 ms) pending item 29. `AND_BAR_HINT` retains the shared provisional wobble tuning.
 
 ### 6.5 Opening a door (assumption use)
 
@@ -692,11 +701,11 @@ As 6.7: the press still moves the face 1.5 px. The split, each seat, the bar lig
 
 ### 14.8 The tray's empty slot
 
-Decided (11/1): the dashed empty slot next to the tray goes away, and a joined key will be split by tapping its own bar in the tray (6.4). Stage-001 has no joined key, so the slot can never do anything here. The simple, safe step for now: **the slot is shown only while the tray holds a joined key.** In stage-001 it is never shown. Stages that do have a joined key (stage-002 on) keep the slot until tapping a key's bar is built, because without one of the two they could not be cleared.
+The dashed empty slot and its split selection, drop, preview and ghost handling are removed in every stage. Tap the joined key's own bar instead (6.4). Stage-001 still has no joined key and is visually unchanged; stage-002 and all later joined keys use this same operation.
 
 ### 14.9 What the runtime has to change
 
-The following changes from PR 6's runtime are implemented for stage-001 in commit `0442643`, together with the formula-only long press (see `src/tuning.ts`); the table records the previous behaviour and its implemented replacement. Stages 002, 003, 004 and 007 also now draw the horizontal bar as described in 14.10, while their own designs remain unchanged:
+The following changes from PR 6's runtime are implemented for stage-001 in commit `0442643`, together with the formula-only long press (see `src/tuning.ts`); the table records the previous behaviour and its implemented replacement. Stages 002, 003, 004 and 007 also draw the horizontal bar as described in 14.10. Joined tray keys now split via their own bars (6.4), including stage-002's specified presentation:
 
 | Now | Then |
 | --- | --- |
@@ -708,7 +717,7 @@ The following changes from PR 6's runtime are implemented for stage-001 in commi
 | A missed single key makes the joint pulse 1 → 1.04 → 1 | The key flies back, then the bar wobbles |
 | Split: a `light` seam, the joint shortens to 0.53, two tabs grow, a 36 px coupler | No seam. The bar stays the same size and glides to the row centre. No coupler, no tabs. The leaf gap is the bar's length minus twice its overlap |
 | A tab lights when one hole is filled; the coupler lights and pulses when both are | Nothing when one is filled; the whole bar lights and pulses when both are |
-| The empty slot is always shown | Shown only while the tray holds a joined key (14.8) |
+| The empty slot is always shown | Removed; tap the joined key's bar (6.4, 14.8) |
 | The chip of the split door shows a vertical link | The bar between the two tiny doors |
 
 ### 14.10 Other stages that will look different
@@ -717,7 +726,7 @@ Because AND is now always a horizontal bar between two shapes side by side, ever
 
 Playable now (layers 1 and 2):
 
-- **stage-002** (`Q ∧ P` from `P ∧ Q`): the door gets the bar. The joined key in the tray gets the same bar: it lies in the gap and touches both shapes, instead of running behind them from centre to centre, and the shapes move to the `s / 2` gap.
+- **stage-002** (`Q ∧ P` from `P ∧ Q`): the implemented tray split interaction and timing are in 6.4. The door gets the bar. The joined key in the tray gets the same bar: it lies in the gap and touches both shapes, instead of running behind them from centre to centre, and the shapes move to the `s / 2` gap.
 - **stage-003** (`P → (P ∧ Q)` from `Q`): the grey `P ∧ Q` on the if-then door is stacked today, because a pair splits along the longer side of its box. It becomes side by side with a horizontal bar, so it gets smaller. The room behind the if-then door has an AND door like stage-001.
 - **stage-004** (`(P ∧ (Q ∧ R)) → ((P ∧ Q) ∧ R)`): nested ANDs alternate between side by side and stacked today. They all go side by side, with the inner pair on a small platform; its look is open (item 34), and so are the inner bars (item 4) and the long borrowed key (item 5).
 - **stage-007** (`(P → P) ∧ (Q → (P → Q))`): the bar sits between the two if-then pockets instead of the vertical joint.

@@ -20,9 +20,12 @@ import {
   LONG_PRESS_PICTURES,
   AND_BAR_LIGHTS_ON,
   AND_BAR,
+  KEY_SPLIT,
+  KEY_SPLIT_PROVISIONAL,
 } from "./tuning";
 import { load, save } from "./progress";
 import { fitMotion } from "./motion";
+import { keySplitMotion } from "./key-motion";
 import { doorMotion, joinDoors } from "./door-motion";
 import first from "./stages/layer-01.json";
 import second from "./stages/layer-02.json";
@@ -97,10 +100,27 @@ function unsplitPair() {
     r.goal.op === "∧"
   );
 }
-function wobbleBar() {
-  if (!unsplitPair() || reduced() || wobble?.playState === "running") return;
-  const bar = app.querySelector<SVGElement>(".goal .joint");
-  if (!bar) return;
+function splittableKey() {
+  return (
+    state?.rooms[state.current].keys.findIndex((k, key) => {
+      const f = k.proof.formula;
+      return (
+        typeof f !== "string" &&
+        f.op === "∧" &&
+        !!preview({ type: "split", key })?.length
+      );
+    }) ?? -1
+  );
+}
+function wobbleBar(key?: number) {
+  if (reduced()) return;
+  const bar = app.querySelector<SVGElement>(
+    key === undefined
+      ? ".goal .joint"
+      : `.key-button[data-key="${key}"] .bridge[data-path=""]`,
+  );
+  if (!bar || bar.getAnimations().some((a) => a.playState === "running"))
+    return;
   bar.style.transformBox = "fill-box";
   bar.style.transformOrigin = "center";
   const a = AND_BAR_HINT.angleDeg;
@@ -114,11 +134,25 @@ function wobbleBar() {
   wobble = animation;
   setTimeout(() => animation.cancel(), AND_BAR_HINT.durationMs);
 }
+let keyHintTimer: ReturnType<typeof setTimeout> | undefined;
+function wobblePair() {
+  if (unsplitPair()) wobbleBar();
+  const key = splittableKey();
+  if (key < 0) return;
+  clearTimeout(keyHintTimer);
+  keyHintTimer = setTimeout(
+    () => wobbleBar(key),
+    unsplitPair()
+      ? AND_BAR_HINT.durationMs + KEY_SPLIT_PROVISIONAL.hintGapMs
+      : 0,
+  );
+}
 function scheduleIdleHint() {
   clearTimeout(idleTimer);
-  if (idleTouched || !unsplitPair() || reduced()) return;
+  if (idleTouched || (!unsplitPair() && splittableKey() < 0) || reduced())
+    return;
   const repeat = () => {
-    wobbleBar();
+    wobblePair();
     idleTimer = setTimeout(repeat, AND_BAR_HINT.repeatMs);
   };
   idleTimer = setTimeout(repeat, AND_BAR_HINT.firstMs);
@@ -130,6 +164,7 @@ let dropShape: DOMRect | undefined;
 function shapeBox(object: Element | null): DOMRect | undefined {
   const parts = [...(object?.querySelector(".picture")?.children ?? [])]
     .slice(1)
+    .filter((el) => !el.classList.contains("held-glow"))
     .map((el) => el.getBoundingClientRect());
   if (!parts.length) return undefined;
   const x = Math.min(...parts.map((b) => b.x)),
@@ -148,10 +183,49 @@ function undoLast() {
   const before = app
     .querySelector<HTMLElement>(".door-area")
     ?.cloneNode(true) as HTMLElement | undefined;
-  state = history.pop()!;
+  const restored = history.pop()!;
+  const removed = room.keys
+    .slice(restored.rooms[restored.current].keys.length)
+    .map((_, i) => {
+      const object = app.querySelector<HTMLElement>(
+        `.key-button[data-key="${restored.rooms[restored.current].keys.length + i}"] .object`,
+      );
+      if (!object) return undefined;
+      const box = object.getBoundingClientRect();
+      const copy = document.createElement("div");
+      copy.className = "result-flight key-flight";
+      Object.assign(copy.style, {
+        left: `${box.x}px`,
+        top: `${box.y}px`,
+        width: `${box.width}px`,
+        height: `${box.height}px`,
+      });
+      copy.append(object.cloneNode(true));
+      return copy;
+    })
+    .filter((c) => c !== undefined);
+  state = restored;
   selected = undefined;
   screen = "room";
   render();
+  if (removed.length) {
+    const animations = removed.map((c) => {
+      document.body.append(c);
+      return c.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: KEY_SPLIT.undoMs,
+        easing: "linear",
+        fill: "both",
+      });
+    });
+    const finish = () => {
+      clearTimeout(timer);
+      animations.forEach((a) => a.cancel());
+      removed.forEach((c) => c.remove());
+      finishMotion = undefined;
+    };
+    const timer = setTimeout(finish, KEY_SPLIT.undoMs);
+    finishMotion = finish;
+  }
   if (
     room.mode === "∧I" &&
     state.rooms[state.current].mode !== "∧I" &&
@@ -182,6 +256,7 @@ document.addEventListener(
     suppressNativeClick = false;
     idleTouched = true;
     clearTimeout(idleTimer);
+    clearTimeout(keyHintTimer);
     if ((event.target as Element).closest(".joint-button")) wobble?.cancel();
     app.querySelectorAll(".tutorial-hand").forEach((el) => el.remove());
     app.querySelectorAll(".hint").forEach((el) => el.classList.remove("hint"));
@@ -424,6 +499,48 @@ function commit(action: Action) {
     );
   }
 }
+function splitKey(key: number) {
+  const room = state.rooms[state.current];
+  const formula = room.keys[key].proof.formula;
+  if (typeof formula === "string" || formula.op !== "∧") return;
+  const visual = app.querySelector(
+    `.key-button[data-key="${key}"] .picture > .pair`,
+  )!;
+  const sources = ["L", "R"].map((part) =>
+    visual.querySelector(`[data-key-part="${part}"]`)!.getBoundingClientRect(),
+  );
+  const oldCount = room.keys.length;
+  const next = move(state, { type: "split", key });
+  if (next.rooms[next.current].keys.length > oldCount) history.push(state);
+  state = next;
+  selected = undefined;
+  render();
+  const keys = state.rooms[state.current].keys;
+  const targets = [formula.left, formula.right]
+    .map((f, i) => {
+      const at = keys.findIndex((k) => equal(k.proof.formula, f));
+      return {
+        button: app.querySelector<HTMLElement>(
+          `.key-button[data-key="${at}"]`,
+        )!,
+        source: sources[i],
+        fresh: at >= oldCount,
+      };
+    })
+    .filter((t, i, all) => all.findIndex((a) => a.button === t.button) === i);
+  const face = app.querySelector<SVGElement>(
+    `.key-button[data-key="${key}"] .bridge[data-path=""] > .joint-face`,
+  )!;
+  const restore = face.animate(
+    [{ transform: "translateY(1.5px)" }, { transform: "translateY(0)" }],
+    { duration: KEY_SPLIT.returnMs, easing: "cubic-bezier(.22,1,.36,1)" },
+  );
+  const finish = keySplitMotion(targets, reduced(), buzz, () => {
+    restore.cancel();
+    finishMotion = undefined;
+  });
+  finishMotion = finish;
+}
 function preview(action: Action): Formula[] | undefined {
   try {
     const n = move(state, action);
@@ -527,21 +644,19 @@ function renderRoom() {
   const r = state.rooms[state.current];
   const usePreview =
     selected === undefined ? undefined : preview(doorAction(selected));
-  const splitPreview =
-    selected === undefined
-      ? undefined
-      : preview({ type: "split", key: selected });
   app.innerHTML = `<div class="room"><nav class="path">${button("ui-stages", "ステージ一覧", 'id="map"')}<div class="chips">${state.rooms.map((room, i) => `<button data-room="${i}" data-formula="${escape(format(room.goal))}" aria-label="部屋 ${i + 1}: ${escape(spoken(room.goal))}" class="chip ${i === state.current ? "here" : ""} ${room.proof ? "done" : ""} ${room.parent !== undefined ? "child" : ""}" ${visitable(state, i) ? "" : "disabled"}>${room.mode === "∧I" ? `<span class="split-chip">${room.children.map((c) => picture(state.rooms[c].goal, 60, 60, true, filled(state.rooms[c]))).join("<i></i>")}</span>` : card(room.goal, "node", true, filled(room))}${room.proof ? icon("ui-check") : ""}${room.ribbon ? ribbon([room.ribbon]) : ""}</button>`).join("")}</div></nav><div class="door-area"><div class="arch-glow"></div>${goalDoors(usePreview !== undefined)}</div><div class="tray"><div class="tray-line">${icon("key")}${pips(index + 1)}</div><div class="key-grid">${r.keys
     .map((k, i) => {
       const forms =
         selected === undefined
           ? undefined
           : preview({ type: "apply", key: selected, target: i });
-      return `<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${forms ? fitPreview(k.proof.formula) : ""}${ghosts(forms)}</button>`;
+      const joined =
+        typeof k.proof.formula !== "string" && k.proof.formula.op === "∧";
+      return `${joined ? '<div class="key-cell">' : ""}<button class="key-button ${selected === i ? "selected" : ""} ${forms ? "valid" : ""}" data-key="${i}" data-drop="${i}" data-formula="${escape(format(k.proof.formula))}" aria-label="鍵 ${i + 1}: ${escape(spoken(k.proof.formula))}" aria-pressed="${selected === i}">${card(k.proof.formula)}${ribbon(k.ribbons)}${forms ? fitPreview(k.proof.formula) : ""}${ghosts(forms)}</button>${joined ? "</div>" : ""}`;
     })
     .join(
       "",
-    )}${r.keys.some((k) => typeof k.proof.formula !== "string" && k.proof.formula.op === "∧") ? `<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: つながった鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button>` : ""}</div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
+    )}</div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
   if (r.mode === "∧I") {
     for (const side of ["L", "R"] as const) {
       const tile = app.querySelector<HTMLElement>(`[data-drop="${side}"]`)!;
@@ -571,98 +686,139 @@ function renderRoom() {
     }
   }
   const jointLayouts: (() => void)[] = [];
-  app.querySelectorAll<SVGElement>(".goal .joint").forEach((visual) => {
-    if (visual.closest(".half-filled")) return;
-    const frame = visual.closest<HTMLElement>(".goal-frame")!;
-    const joint = document.createElement("button");
-    joint.className = "joint-button";
-    joint.dataset.path = visual.dataset.path;
-    const dropSide = frame.querySelector<HTMLElement>(".goal")!.dataset.drop;
-    let formula =
-      dropSide === "L" || dropSide === "R"
-        ? state.rooms[r.children[dropSide === "L" ? 0 : 1]].goal
-        : r.goal;
-    for (const side of visual.dataset.path ?? "")
-      if (typeof formula !== "string")
-        formula = side === "L" ? formula.left : formula.right;
-    joint.setAttribute("aria-label", `split ${spoken(formula)}`);
-    const position = () => {
-      const box = visual.getBoundingClientRect(),
-        parent = frame.getBoundingClientRect();
-      joint.style.left = `${box.x + box.width / 2 - parent.x}px`;
-      joint.style.top = `${box.y + box.height / 2 - parent.y}px`;
-      joint.style.width = `${TOUCH_TARGET_PX}px`;
-      joint.style.height = `${TOUCH_TARGET_PX}px`;
-    };
-    jointLayouts.push(position);
-    frame.append(joint);
-    position();
-    let pressing = false,
-      cancelled = false;
-    let holdTimer: ReturnType<typeof setTimeout>;
-    const release = () => {
-      pressing = false;
-      clearTimeout(holdTimer);
-      joint.classList.remove("pressed");
-      document.querySelector(".formula-bubble")?.remove();
-      document.body.classList.remove("holding");
-    };
-    joint.onclick = (event) => {
-      event.stopPropagation();
-      if (cancelled) {
+  app
+    .querySelectorAll<SVGElement>(
+      '.goal .joint, .key-cell .bridge[data-path=""]',
+    )
+    .forEach((visual) => {
+      if (visual.closest(".half-filled")) return;
+      const keyButton = visual.closest<HTMLButtonElement>(".key-button");
+      const key = keyButton ? Number(keyButton.dataset.key) : undefined;
+      const frame = visual.closest<HTMLElement>(".goal-frame,.key-cell")!;
+      const joint = document.createElement("button");
+      joint.className = `joint-button${keyButton ? " key-joint" : ""}`;
+      if (key !== undefined) joint.dataset.key = String(key);
+      if (!keyButton) joint.dataset.path = visual.dataset.path;
+      const dropSide = frame.querySelector<HTMLElement>(".goal")?.dataset.drop;
+      let formula =
+        key !== undefined
+          ? r.keys[key].proof.formula
+          : dropSide === "L" || dropSide === "R"
+            ? state.rooms[r.children[dropSide === "L" ? 0 : 1]].goal
+            : r.goal;
+      for (const side of visual.dataset.path ?? "")
+        if (typeof formula !== "string")
+          formula = side === "L" ? formula.left : formula.right;
+      joint.setAttribute(
+        "aria-label",
+        `${keyButton ? "鍵を分ける:" : "split"} ${spoken(formula)}`,
+      );
+      const position = () => {
+        const box = visual.getBoundingClientRect(),
+          parent = frame.getBoundingClientRect();
+        joint.style.left = `${box.x + box.width / 2 - parent.x}px`;
+        joint.style.top = `${box.y + box.height / 2 - parent.y}px`;
+        joint.style.width = `${TOUCH_TARGET_PX}px`;
+        joint.style.height = `${TOUCH_TARGET_PX}px`;
+      };
+      jointLayouts.push(position);
+      frame.append(joint);
+      position();
+      let pressing = false,
         cancelled = false;
-        return;
-      }
-      const path = [
-        ...(dropSide === "L" || dropSide === "R" ? dropSide : ""),
-        ...(joint.dataset.path ?? ""),
-      ] as ("L" | "R")[];
-      visual.classList.add("tapped");
-      commit({ type: "decompose", path });
-      visual.classList.remove("tapped");
-    };
-    joint.onpointerdown = (event) => {
-      event.stopPropagation();
-      pressing = true;
-      cancelled = false;
-      joint.setPointerCapture(event.pointerId);
-      joint.classList.add("pressed");
-      holdTimer = setTimeout(() => {
-        if (cancelled) return;
-        cancelled = true;
-        joint.classList.remove("pressed");
-        document.body.classList.add("holding");
-        const bubble = document.createElement("div");
-        bubble.className = "formula-bubble";
-        bubble.textContent = format(formula);
-        document.body.append(bubble);
-      }, 450);
-    };
-    joint.onpointermove = (event) => {
-      if (!pressing) return;
-      const box = joint.getBoundingClientRect();
-      if (
-        event.clientX < box.left - 8 ||
-        event.clientX > box.right + 8 ||
-        event.clientY < box.top - 8 ||
-        event.clientY > box.bottom + 8
-      ) {
-        cancelled = true;
+      let initial: PointerEvent | undefined;
+      let dragging = false;
+      let holdTimer: ReturnType<typeof setTimeout>;
+      const release = () => {
+        pressing = false;
         clearTimeout(holdTimer);
         joint.classList.remove("pressed");
-      }
-    };
-    joint.onpointerup = release;
-    joint.onpointercancel = () => {
-      cancelled = true;
-      release();
-    };
-  });
+        document.querySelector(".formula-bubble")?.remove();
+        document.body.classList.remove("holding");
+      };
+      joint.onclick = (event) => {
+        event.stopPropagation();
+        if (cancelled) {
+          cancelled = false;
+          return;
+        }
+        if (key !== undefined) {
+          splitKey(key);
+          return;
+        }
+        const path = [
+          ...(dropSide === "L" || dropSide === "R" ? dropSide : ""),
+          ...(joint.dataset.path ?? ""),
+        ] as ("L" | "R")[];
+        visual.classList.add("tapped");
+        commit({ type: "decompose", path });
+        visual.classList.remove("tapped");
+      };
+      joint.onpointerdown = (event) => {
+        event.stopPropagation();
+        pressing = true;
+        cancelled = false;
+        initial = event;
+        dragging = false;
+        joint.setPointerCapture(event.pointerId);
+        joint.classList.add("pressed");
+        holdTimer = setTimeout(() => {
+          if (cancelled) return;
+          cancelled = true;
+          joint.classList.remove("pressed");
+          document.body.classList.add("holding");
+          const bubble = document.createElement("div");
+          bubble.className = "formula-bubble";
+          bubble.textContent = format(formula);
+          document.body.append(bubble);
+        }, 450);
+      };
+      joint.onpointermove = (event) => {
+        if (!pressing) return;
+        if (
+          keyButton &&
+          initial &&
+          !cancelled &&
+          Math.hypot(
+            event.clientX - initial.clientX,
+            event.clientY - initial.clientY,
+          ) > 8
+        ) {
+          cancelled = true;
+          dragging = true;
+          clearTimeout(holdTimer);
+          joint.classList.remove("pressed");
+          keyButton.dispatchEvent(new PointerEvent("pointerdown", initial));
+          keyButton.dispatchEvent(new PointerEvent("pointermove", event));
+          return;
+        }
+        const box = joint.getBoundingClientRect();
+        if (
+          event.clientX < box.left - 8 ||
+          event.clientX > box.right + 8 ||
+          event.clientY < box.top - 8 ||
+          event.clientY > box.bottom + 8
+        ) {
+          cancelled = true;
+          clearTimeout(holdTimer);
+          joint.classList.remove("pressed");
+        }
+      };
+      joint.onpointerup = (event) => {
+        if (dragging)
+          keyButton?.dispatchEvent(new PointerEvent("pointerup", event));
+        release();
+      };
+      joint.onpointercancel = () => {
+        cancelled = true;
+        release();
+      };
+    });
   jointObserver = new ResizeObserver(() =>
     jointLayouts.forEach((position) => position()),
   );
   app
-    .querySelectorAll(".goal-frame")
+    .querySelectorAll(".goal-frame,.key-cell")
     .forEach((frame) => jointObserver!.observe(frame));
   app.querySelector<HTMLElement>("#map")!.onclick = () => {
     selected = undefined;
@@ -718,7 +874,7 @@ function highlightHoles(key: number) {
   const held = state.rooms[state.current].keys[key].proof.formula;
   app
     .querySelectorAll<HTMLElement>(
-      '[data-drop="door"], [data-drop="L"], [data-drop="R"], [data-key]',
+      '[data-drop="door"], [data-drop="L"], [data-drop="R"], .key-button[data-key]',
     )
     .forEach((target) => {
       const room = state.rooms[state.current];
@@ -778,8 +934,6 @@ function target(el: HTMLElement | SVGElement) {
       buzz([15, 40, 15]);
       wobbleBar();
     } else commit(doorAction(selected, side));
-  } else if (el.dataset.drop === "slot") {
-    if (selected !== undefined) commit({ type: "split", key: selected });
   } else {
     const key = Number(el.dataset.key);
     if (selected === key) {
@@ -804,11 +958,15 @@ function toggleCaptions() {
 }
 function hint(tutorial = false) {
   if (unsplitPair()) {
-    if (!tutorial) wobbleBar();
+    if (!tutorial) wobblePair();
     return;
   }
   const action = solve(state)?.[0];
   if (!action) return;
+  if (action.type === "split") {
+    if (!tutorial) wobbleBar(action.key);
+    return;
+  }
   const room = state.rooms[state.current];
   let selector =
     action.type === "intro" || action.type === "decompose"
@@ -828,11 +986,9 @@ function hint(tutorial = false) {
   const targetSelector =
     action.type === "use"
       ? ".goal"
-      : action.type === "split"
-        ? ".empty-slot"
-        : action.type === "apply"
-          ? `[data-key="${action.target}"]`
-          : selector;
+      : action.type === "apply"
+        ? `[data-key="${action.target}"]`
+        : selector;
   const dest = app.querySelector<HTMLElement>(targetSelector);
   dest?.classList.add("hint");
   if (tutorial && el) {
@@ -856,7 +1012,10 @@ function dropTargetAt(x: number, y: number): HTMLElement | undefined {
   const joint = element?.closest(".joint-button");
   return (
     (joint
-      ? joint.closest(".goal-frame")?.querySelector<HTMLElement>(".goal")
+      ? (joint
+          .closest(".key-cell")
+          ?.querySelector<HTMLElement>(".key-button") ??
+        joint.closest(".goal-frame")?.querySelector<HTMLElement>(".goal"))
       : element?.closest<HTMLElement>("[data-drop]")) ?? undefined
   );
 }
@@ -1007,6 +1166,10 @@ function bindGestures() {
               const timer = setTimeout(() => {
                 finish();
                 if (dest?.dataset.drop === "door") wobbleBar();
+                else if (dest && ["L", "R"].includes(dest.dataset.drop ?? "")) {
+                  const key = Number(el.dataset.key);
+                  if (preview({ type: "split", key })?.length) wobbleBar(key);
+                }
               }, duration);
               finishMotion = finish;
             }
@@ -1063,11 +1226,9 @@ function dropAction(
           ? el.dataset.drop
           : undefined,
       )
-    : el.dataset.drop === "slot"
-      ? { type: "split", key }
-      : el.dataset.key !== undefined
-        ? { type: "apply", key, target: Number(el.dataset.key) }
-        : undefined;
+    : el.dataset.key !== undefined
+      ? { type: "apply", key, target: Number(el.dataset.key) }
+      : undefined;
 }
 function showReplay(proof: Proof) {
   replay = [];

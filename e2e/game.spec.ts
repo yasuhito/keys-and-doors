@@ -50,14 +50,13 @@ test("all nine stages through real controls, persistence, replay and locked late
         await page.locator(`[data-room="${state.current}"]`).click();
       if (action.type === "intro") await activateDoor(page);
       else if (action.type === "use") {
-        await page.locator(`[data-key="${action.key}"]`).click();
+        await page.locator(`.key-button[data-key="${action.key}"]`).click();
         await activateDoor(page);
       } else if (action.type === "split") {
-        await page.locator(`[data-key="${action.key}"]`).click();
-        await page.locator(".empty-slot").click();
+        await page.locator(`.key-joint[data-key="${action.key}"]`).click();
       } else if (action.type === "apply") {
-        await page.locator(`[data-key="${action.key}"]`).click();
-        await page.locator(`[data-key="${action.target}"]`).click();
+        await page.locator(`.key-button[data-key="${action.key}"]`).click();
+        await page.locator(`.key-button[data-key="${action.target}"]`).click();
       } else if (action.type === "lemma") {
         await page.locator(`[data-key="${action.key}"]`).click();
         await page.locator(`[data-key="${action.key}"]`).click();
@@ -169,13 +168,11 @@ test("room reset restores the tray from entry even after visiting another room",
   await unlock(page, 1);
   await page.locator('[data-stage="1"]').click();
   await activateDoor(page);
-  const keys = page.locator("[data-key]");
-  await page.locator('[data-key="0"]').click();
-  await page.locator(".empty-slot").click();
+  const keys = page.locator(".key-button");
+  await page.locator('.key-joint[data-key="0"]').click();
   await expect(keys).toHaveCount(3);
   await page.locator('[data-room="2"]').click();
-  await page.locator('[data-key="0"]').click();
-  await page.locator(".empty-slot").click();
+  await page.locator('.key-joint[data-key="0"]').click();
   await expect(keys).toHaveCount(3);
   await page.locator('[data-room="1"]').click();
   await page.locator("#reset").click();

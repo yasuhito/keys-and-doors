@@ -598,16 +598,29 @@ body:has(.drag-copy) .goal.hovered .door-preview {
 .goal .ghosts {
   top: 5px;
 }
-.empty-slot {
-  border: 2px dashed #9da3c255;
+.key-cell {
+  position: relative;
   align-self: start;
   justify-self: center;
-  width: 88px;
-  height: 74px;
-  color: #9da3c2;
 }
-.empty-slot > .icon {
-  opacity: 0.5;
+.key-joint {
+  touch-action: none;
+}
+.key-cell:has(.key-joint.pressed) .bridge[data-path=""] > .joint-face {
+  transform: translateY(1.5px);
+  transition-duration: 80ms;
+}
+.key-button.incoming > .object {
+  visibility: hidden;
+}
+.key-flight {
+  transform-origin: 50% 47.5%;
+  filter: none;
+  pointer-events: none;
+}
+.picture .held-glow {
+  opacity: 0;
+  filter: blur(2px);
 }
 .ribbons {
   position: absolute;

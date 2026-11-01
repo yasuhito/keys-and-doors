@@ -7,6 +7,21 @@ export const AND_BAR_HINT = {
   durationMs: 280,
   angleDeg: 6,
 };
+export const KEY_SPLIT = {
+  returnMs: 120,
+  launchMs: 180,
+  flightMs: 300,
+  bodyMs: 100,
+  arcPx: 8,
+  reducedFadeMs: 150,
+  undoMs: 150,
+};
+export const KEY_SPLIT_PROVISIONAL = {
+  hintGapMs: 60,
+  heldFlashMs: 240,
+  heldOpacity: 0.6,
+  reducedHeldHalfMs: 150,
+};
 // Provisional long-press content: formula only, without miniature pictures.
 export const LONG_PRESS_PICTURES = false;
 // Provisional completion policy: no bar light until every hollow is filled.

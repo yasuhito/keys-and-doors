@@ -278,21 +278,24 @@ export function picture(
   ): string {
     switch (l.kind) {
       case "fold":
-        return `<text x="${n(l.b.x + l.b.w / 2)}" y="${n(l.b.y + l.b.h / 2)}" text-anchor="middle" dominant-baseline="middle" fill="#6B5E4B">···</text>`;
+        return `<text data-key-part="${path}" x="${n(l.b.x + l.b.w / 2)}" y="${n(l.b.y + l.b.h / 2)}" text-anchor="middle" dominant-baseline="middle" fill="#6B5E4B">···</text>`;
       case "atom":
         return (
-          outline(l, 0, colours(p), 2) +
+          outline(l, 0, colours(p), 2).replace(
+            "<path ",
+            `<path data-key-part="${path}" `,
+          ) +
           (marks[l.name] && p === have
             ? `<path d="${marks[l.name]}" ${place(l)} fill="none" stroke="${p.atom(l.name)[1]}" stroke-width="2.5" stroke-linecap="round"/>`
             : "")
         );
       case "pair":
-        return `<g class="pair">${face(l.parts[0], p, path + "L", full)}${face(l.parts[1], p, path + "R", full)}<g class="bridge">${barFace(l.bar, p.bar)}</g></g>`;
+        return `<g class="pair" data-key-part="${path}">${face(l.parts[0], p, path + "L", full)}${face(l.parts[1], p, path + "R", full)}<g class="bridge"${path === "" ? ' data-path=""' : ""}>${barFace(l.bar, p.bar)}</g></g>`;
       case "imp": {
         full ||= complete(l, path);
         // Until its hole is filled, what an if-then gives is drawn grey.
         const result = full ? have : pending;
-        return `${plate ? `<g class="plate">${outline(l, 0, () => [p.plate[1], p.plate[1]], 3)}${outline(l, 0, () => [p.plate[0], p.plate[0]])}</g>` : ""}<g class="slot" data-part="${path}S">${hole(l.parts[0], p, path + "S", full || complete(l.parts[0], path + "S"), path === "" && !goal, false)}</g><path class="arrow" d="${l.arrow}" fill="none" stroke="${full ? lit : p.arrow}" stroke-width="${n(l.stroke * (full ? 1.25 : 1))}" stroke-linecap="round" stroke-linejoin="round"/><g class="result" data-part="${path}T">${face(l.parts[1], result, path + "T", full)}</g>`;
+        return `${plate ? `<g class="plate" data-key-part="${path}">${outline(l, 0, () => [p.plate[1], p.plate[1]], 3)}${outline(l, 0, () => [p.plate[0], p.plate[0]])}</g>` : ""}<g class="slot" data-part="${path}S">${hole(l.parts[0], p, path + "S", full || complete(l.parts[0], path + "S"), path === "" && !goal, false)}</g><path class="arrow" d="${l.arrow}" fill="none" stroke="${full ? lit : p.arrow}" stroke-width="${n(l.stroke * (full ? 1.25 : 1))}" stroke-linecap="round" stroke-linejoin="round"/><g class="result" data-part="${path}T">${face(l.parts[1], result, path + "T", full)}</g>`;
       }
     }
   }
@@ -373,7 +376,7 @@ export function picture(
     const edge = colours(have)(part)[1];
     return [edge, edge];
   };
-  return `<svg class="picture" viewBox="0 0 ${w} ${h}" aria-hidden="true"><g class="body">${shift(t, outline(l, 0, underside, 2))}</g>${face(l, have, "", false)}</svg>`;
+  return `<svg class="picture" viewBox="0 0 ${w} ${h}" aria-hidden="true"><g class="body">${shift(t, outline(l, 0, underside, 2))}</g><g class="held-glow">${outline(l, 0, () => ["#FFE7A8", "#FFE7A8"], 8)}</g>${face(l, have, "", false)}</svg>`;
 }
 export const escape = (text: string) =>
   text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

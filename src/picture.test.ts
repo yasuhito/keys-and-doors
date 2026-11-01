@@ -49,6 +49,27 @@ it("uses horizontal bars recursively on doors, but recessed channels inside keys
   expect(pocket).not.toContain('class="joint"');
   expect(pocket).toContain('class="bridge"');
 });
+it("exposes only the outer held pair bridge for its independent split button", () => {
+  const pair = picture(parse("(P ∧ Q) ∧ R"), 88, 66);
+  expect(pair.match(/class="bridge" data-path=""/g)).toHaveLength(1);
+  expect(picture(parse("P → (Q ∧ R)"), 88, 66)).not.toContain(
+    'class="bridge" data-path=""',
+  );
+  expect(pair).toContain('<g class="joint-face">');
+});
+it("identifies the two split source silhouettes independently of extra engraved marks", () => {
+  const key = picture(parse("R ∧ (P → Q)"), 88, 66);
+  expect(key).toContain('<path data-key-part="L"');
+  expect(key).toContain('<g class="plate" data-key-part="R"');
+  expect(picture("R", 88, 66)).toContain('<path data-key-part=""');
+});
+it("provides a brass-coloured outline glow separate from the held face and body", () => {
+  const key = picture("P", 88, 66);
+  expect(key).toMatch(
+    /<g class="body">.*<g class="held-glow">.*stroke="#FFE7A8" stroke-width=/,
+  );
+  expect(picture("P", 184, 137, true)).not.toContain('class="held-glow"');
+});
 it("fills nested if-then results recursively", () => {
   const fitted = picture(parse("P → (Q → R)"), 184, 137, false, [""]);
   expect(fitted).toContain('class="seated"');

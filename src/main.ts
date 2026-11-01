@@ -13,7 +13,14 @@ import {
   type Formula,
   type Proof,
 } from "./core";
-import { card, escape, icon, picture, spoken } from "./picture";
+import { card, escape, icon, picture, spoken, splitBar } from "./picture";
+import {
+  TOUCH_TARGET_PX,
+  AND_BAR_HINT,
+  LONG_PRESS_PICTURES,
+  AND_BAR_LIGHTS_ON,
+  AND_BAR,
+} from "./tuning";
 import { load, save } from "./progress";
 import { fitMotion } from "./motion";
 import { doorMotion, joinDoors } from "./door-motion";
@@ -24,6 +31,24 @@ const layers = Object.values(
 ) as (typeof first)[];
 const stages = [...first.stages, ...second.stages];
 const app = document.querySelector<HTMLElement>("#app")!;
+document.documentElement.style.setProperty(
+  "--touch-target-px",
+  `${TOUCH_TARGET_PX}px`,
+);
+const panelScale = 175 / 184;
+const splitGap = Math.max(AND_BAR.minGap, 64 * AND_BAR.gap);
+document.documentElement.style.setProperty(
+  "--and-gap",
+  `${splitGap * panelScale}px`,
+);
+document.documentElement.style.setProperty(
+  "--and-width",
+  `${(splitGap + 2 * AND_BAR.overlap + 8) * panelScale}px`,
+);
+document.documentElement.style.setProperty(
+  "--and-overhang",
+  `${-(AND_BAR.overlap + 4) * panelScale}px`,
+);
 let progress = load(localStorage, stages),
   index = 0,
   state: State,
@@ -55,8 +80,48 @@ function enter(i: number) {
   history = [];
   selected = undefined;
   screen = "room";
+  idleTouched = false;
   render();
   hint(true);
+}
+let idleTouched = true;
+let idleTimer: ReturnType<typeof setTimeout> | undefined;
+let wobble: Animation | undefined;
+function unsplitPair() {
+  const r = state?.rooms[state.current];
+  return (
+    screen === "room" &&
+    r &&
+    r.mode !== "∧I" &&
+    typeof r.goal !== "string" &&
+    r.goal.op === "∧"
+  );
+}
+function wobbleBar() {
+  if (!unsplitPair() || reduced() || wobble?.playState === "running") return;
+  const bar = app.querySelector<SVGElement>(".goal .joint");
+  if (!bar) return;
+  bar.style.transformBox = "fill-box";
+  bar.style.transformOrigin = "center";
+  const a = AND_BAR_HINT.angleDeg;
+  const animation = bar.animate(
+    [0, -a, a, -a / 2, 0].map((angle) => ({
+      transform: `rotate(${angle}deg)`,
+      easing: "cubic-bezier(.65,0,.35,1)",
+    })),
+    { duration: AND_BAR_HINT.durationMs },
+  );
+  wobble = animation;
+  setTimeout(() => animation.cancel(), AND_BAR_HINT.durationMs);
+}
+function scheduleIdleHint() {
+  clearTimeout(idleTimer);
+  if (idleTouched || !unsplitPair() || reduced()) return;
+  const repeat = () => {
+    wobbleBar();
+    idleTimer = setTimeout(repeat, AND_BAR_HINT.repeatMs);
+  };
+  idleTimer = setTimeout(repeat, AND_BAR_HINT.firstMs);
 }
 let finishMotion: (() => void) | undefined;
 let jointObserver: ResizeObserver | undefined;
@@ -115,6 +180,9 @@ document.addEventListener(
   "pointerdown",
   (event) => {
     suppressNativeClick = false;
+    idleTouched = true;
+    clearTimeout(idleTimer);
+    if ((event.target as Element).closest(".joint-button")) wobble?.cancel();
     app.querySelectorAll(".tutorial-hand").forEach((el) => el.remove());
     app.querySelectorAll(".hint").forEach((el) => el.classList.remove("hint"));
     if (!finishMotion) return;
@@ -374,6 +442,7 @@ function ghosts(forms: Formula[] | undefined) {
 }
 function render() {
   jointObserver?.disconnect();
+  clearTimeout(idleTimer);
   clearInterval(replayTimer);
   app.className = `${progress.captions ? "captions" : ""} ${progress.left ? "left-handed" : ""} ${reduced() ? "reduced" : ""}`;
   if (screen === "map") {
@@ -452,7 +521,7 @@ function goalDoors(valid: boolean) {
   const paths = r.children.flatMap((c, i) =>
     state.rooms[c].proof ? [i ? "R" : "L"] : [],
   );
-  return `<div class="split-doors">${halves[0]}<svg class="coupler ${paths.length === 2 ? "lit" : ""}" viewBox="0 0 36 76" aria-hidden="true"><rect class="tab ${paths.includes("L") ? "lit" : ""}" data-side="L" x="0" y="33" width="12" height="10" rx="2"/><rect class="tab ${paths.includes("R") ? "lit" : ""}" data-side="R" x="24" y="33" width="12" height="10" rx="2"/><rect x="11" y="8" width="14" height="64" rx="7" fill="#9C7024"/><rect class="coupler-face" x="11" y="6" width="14" height="64" rx="7"/><path d="M13 22H23M13 38H23M13 54H23" stroke="#9C7024"/></svg>${halves[1]}</div>`;
+  return `<div class="split-doors" data-formula="${escape(format(r.goal))}">${halves[0]}${splitBar(AND_BAR_LIGHTS_ON === "all-filled" && paths.length === 2)}${halves[1]}</div>`;
 }
 function renderRoom() {
   const r = state.rooms[state.current];
@@ -472,7 +541,7 @@ function renderRoom() {
     })
     .join(
       "",
-    )}<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: つながった鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button></div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
+    )}${r.keys.some((k) => typeof k.proof.formula !== "string" && k.proof.formula.op === "∧") ? `<button class="empty-slot ${splitPreview ? "valid" : ""}" data-drop="slot" aria-label="空き枠: つながった鍵を分ける">${icon("rule-and-elim")}${ghosts(splitPreview)}</button>` : ""}</div></div><footer>${button("ui-undo", "元に戻す", `id="undo" ${history.length ? "" : "disabled"}`)}${button("ui-reset", "部屋をやり直す", 'id="reset"')}${button("ui-hint", "ヒント", 'id="hint"')}${button("ui-formula", "数式の表示を切り替える", `id="captions" aria-pressed="${progress.captions}"`)}</footer></div>`;
   if (r.mode === "∧I") {
     for (const side of ["L", "R"] as const) {
       const tile = app.querySelector<HTMLElement>(`[data-drop="${side}"]`)!;
@@ -522,14 +591,22 @@ function renderRoom() {
         parent = frame.getBoundingClientRect();
       joint.style.left = `${box.x + box.width / 2 - parent.x}px`;
       joint.style.top = `${box.y + box.height / 2 - parent.y}px`;
-      joint.style.width = `${Math.max(48, box.width + 16)}px`;
-      joint.style.height = `${Math.max(48, box.height + 16)}px`;
+      joint.style.width = `${TOUCH_TARGET_PX}px`;
+      joint.style.height = `${TOUCH_TARGET_PX}px`;
     };
     jointLayouts.push(position);
     frame.append(joint);
     position();
     let pressing = false,
       cancelled = false;
+    let holdTimer: ReturnType<typeof setTimeout>;
+    const release = () => {
+      pressing = false;
+      clearTimeout(holdTimer);
+      joint.classList.remove("pressed");
+      document.querySelector(".formula-bubble")?.remove();
+      document.body.classList.remove("holding");
+    };
     joint.onclick = (event) => {
       event.stopPropagation();
       if (cancelled) {
@@ -545,10 +622,21 @@ function renderRoom() {
       visual.classList.remove("tapped");
     };
     joint.onpointerdown = (event) => {
+      event.stopPropagation();
       pressing = true;
       cancelled = false;
       joint.setPointerCapture(event.pointerId);
       joint.classList.add("pressed");
+      holdTimer = setTimeout(() => {
+        if (cancelled) return;
+        cancelled = true;
+        joint.classList.remove("pressed");
+        document.body.classList.add("holding");
+        const bubble = document.createElement("div");
+        bubble.className = "formula-bubble";
+        bubble.textContent = format(formula);
+        document.body.append(bubble);
+      }, 450);
     };
     joint.onpointermove = (event) => {
       if (!pressing) return;
@@ -560,17 +648,14 @@ function renderRoom() {
         event.clientY > box.bottom + 8
       ) {
         cancelled = true;
+        clearTimeout(holdTimer);
         joint.classList.remove("pressed");
       }
     };
-    joint.onpointerup = () => {
-      pressing = false;
-      joint.classList.remove("pressed");
-    };
+    joint.onpointerup = release;
     joint.onpointercancel = () => {
-      pressing = false;
       cancelled = true;
-      joint.classList.remove("pressed");
+      release();
     };
   });
   jointObserver = new ResizeObserver(() =>
@@ -627,6 +712,7 @@ function renderRoom() {
   };
   if (selected !== undefined) highlightHoles(selected);
   bindGestures();
+  scheduleIdleHint();
 }
 function highlightHoles(key: number) {
   const held = state.rooms[state.current].keys[key].proof.formula;
@@ -644,20 +730,6 @@ function highlightHoles(key: number) {
             ? state.rooms[room.children[side === "L" ? 0 : 1]].goal
             : room.keys[Number(target.dataset.key)].proof.formula;
       if (typeof f !== "string" && f.op === "∧") {
-        target
-          .closest(".goal-frame")
-          ?.querySelectorAll<HTMLElement>(".joint-button")
-          .forEach((joint) => {
-            let part: Formula = f;
-            for (const side of joint.dataset.path ?? "")
-              if (typeof part !== "string")
-                part = side === "L" ? part.left : part.right;
-            joint.classList.toggle(
-              "joint-hint",
-              typeof part !== "string" &&
-                [part.left, part.right].some((half) => equal(half, held)),
-            );
-          });
         // A whole pair lights the door's outline, not the joint or half holes.
         return;
       }
@@ -698,10 +770,13 @@ function target(el: HTMLElement | SVGElement) {
     const room = state.rooms[state.current];
     if (selected === undefined) {
       if (!side && typeof room.goal !== "string" && room.goal.op === "∧") {
-        app.querySelector(".joint-button")?.classList.add("joint-hint");
+        wobbleBar();
         return;
       }
       commit({ type: "intro", side });
+    } else if (!side && unsplitPair() && !preview(doorAction(selected))) {
+      buzz([15, 40, 15]);
+      wobbleBar();
     } else commit(doorAction(selected, side));
   } else if (el.dataset.drop === "slot") {
     if (selected !== undefined) commit({ type: "split", key: selected });
@@ -728,6 +803,10 @@ function toggleCaptions() {
   render();
 }
 function hint(tutorial = false) {
+  if (unsplitPair()) {
+    if (!tutorial) wobbleBar();
+    return;
+  }
   const action = solve(state)?.[0];
   if (!action) return;
   const room = state.rooms[state.current];
@@ -807,6 +886,7 @@ function bindGestures() {
     };
     el.onpointerdown = (e) => {
       if (e.button !== 0) return;
+      e.stopPropagation();
       el.removeEventListener("click", swallow, true);
       downX = e.clientX;
       downY = e.clientY;
@@ -818,7 +898,8 @@ function bindGestures() {
         document.body.classList.add("holding");
         const bubble = document.createElement("div");
         bubble.className = "formula-bubble";
-        bubble.textContent = el.dataset.formula!;
+        // Picture previews are intentionally disabled by the provisional policy.
+        if (!LONG_PRESS_PICTURES) bubble.textContent = el.dataset.formula!;
         document.body.append(bubble);
       }, 450);
       if (el.dataset.key !== undefined) el.setPointerCapture(e.pointerId);
@@ -878,6 +959,8 @@ function bindGestures() {
         dropSource = floating?.getBoundingClientRect();
         dropShape = shapeBox(floating ?? null);
       }
+      const returnCopy = floating?.cloneNode(true) as HTMLElement | undefined;
+      const origin = el.querySelector(".object")?.getBoundingClientRect();
       clean();
       if (held || dragged) {
         e.preventDefault();
@@ -890,20 +973,42 @@ function bindGestures() {
             dropSource = dropShape = undefined;
             selected = undefined;
             render();
-            if (dest?.dataset.drop === "door") {
-              const joint = app.querySelector<SVGElement>(".goal .joint");
-              if (joint && !reduced()) {
-                joint.style.transformBox = "fill-box";
-                joint.style.transformOrigin = "center";
-                joint.animate(
-                  [
-                    { transform: "scale(1)" },
-                    { transform: "scale(1.04)" },
-                    { transform: "scale(1)" },
-                  ],
-                  { duration: 240, easing: "cubic-bezier(.65,0,.35,1)" },
-                );
-              }
+            if (returnCopy && origin) {
+              document.body.append(returnCopy);
+              const duration = reduced() ? 150 : 200;
+              const animation = returnCopy.animate(
+                reduced()
+                  ? [{ opacity: 1 }, { opacity: 0 }]
+                  : [
+                      {
+                        left: returnCopy.style.left,
+                        top: returnCopy.style.top,
+                      },
+                      {
+                        left: `${origin.x + origin.width / 2}px`,
+                        top: `${origin.y + origin.height / 2}px`,
+                      },
+                    ],
+                {
+                  duration,
+                  easing: reduced() ? "linear" : "cubic-bezier(.22,1,.36,1)",
+                  fill: "both",
+                },
+              );
+              let ended = false;
+              const finish = () => {
+                if (ended) return;
+                ended = true;
+                clearTimeout(timer);
+                animation.cancel();
+                returnCopy.remove();
+                finishMotion = undefined;
+              };
+              const timer = setTimeout(() => {
+                finish();
+                if (dest?.dataset.drop === "door") wobbleBar();
+              }, duration);
+              finishMotion = finish;
             }
           }
         }

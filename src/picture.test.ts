@@ -1,5 +1,11 @@
 import { it, expect } from "vitest";
-import { card, picture } from "./picture";
+import { card, picture, splitBar } from "./picture";
+import {
+  AND_BAR,
+  AND_BAR_LIGHTS_ON,
+  LONG_PRESS_PICTURES,
+  TOUCH_TARGET_PX,
+} from "./tuning";
 import { parse, type Formula } from "./core";
 it("escapes formula text interpolated into card markup", () => {
   const html = card("<img src=x onerror=alert(1)>" as Formula, "node");
@@ -20,7 +26,7 @@ it("keeps an if-then result grey until the whole card is filled", () => {
   expect(fitted).toContain("#2F6FD0");
   expect(fitted).toContain('stroke="#B07A1A"');
 });
-it("keeps a raised joint on a goal and seats the pair bar only once both halves are filled", () => {
+it("keeps the horizontal brass bar plain with only one filled hollow", () => {
   const pair = parse("P ∧ Q");
   const partial = picture(pair, 184, 137, true, ["L"]);
   expect(partial).toContain("#E0631F");
@@ -32,7 +38,7 @@ it("keeps a raised joint on a goal and seats the pair bar only once both halves 
   expect(locked).toContain("#2F6FD0");
   expect(locked).toContain('fill="#D9A441"');
 });
-it("uses joints recursively on doors, but recessed channels inside keys and pockets", () => {
+it("uses horizontal bars recursively on doors, but recessed channels inside keys and pockets", () => {
   expect(picture(parse("(P ∧ Q) ∧ R"), 184, 137, true)).toContain(
     'class="joint" data-path="L"',
   );
@@ -75,4 +81,37 @@ it("seats an if-then key as it is, without using it", () => {
 it("shows if-then halves of a pair door as pockets with the key's face", () => {
   const door = picture(parse("(P → P) ∧ (Q → Q)"), 184, 137, true);
   expect(door.match(/class="imprint"/g)).toHaveLength(2);
+});
+it("stage-001 draws the specified rounded bar with two grooves above both hollows", () => {
+  const door = picture(parse("P ∧ Q"), 184, 137, true);
+  expect(door).toContain(
+    'x="83.03" y="62.74" width="36" height="11.52" rx="5.76"',
+  );
+  expect(door).toContain('d="M95.03 65.24v6.52M107.03 65.24v6.52"');
+  expect(door.indexOf('class="joint"')).toBeGreaterThan(
+    door.lastIndexOf('class="cut" data-path="R"'),
+  );
+  expect(door).not.toContain("coupler");
+  expect(door).not.toContain("tab");
+});
+it("the key bar uses the same geometry as a door bar and nested ANDs never stack", () => {
+  for (const goal of [false, true]) {
+    const svg = picture(parse("(P ∧ Q) ∧ R"), 184, 137, goal);
+    const bars = [
+      ...svg.matchAll(
+        /class="joint-face"><rect[^>]*width="([\d.]+)" height="([\d.]+)"/g,
+      ),
+    ];
+    expect(bars.length).toBeGreaterThanOrEqual(2);
+    for (const [, width, height] of bars)
+      expect(Number(width)).toBeGreaterThan(Number(height));
+  }
+});
+it("provisional stage-001 policies keep formulas picture-free and light only the whole completed bar", () => {
+  expect(TOUCH_TARGET_PX).toBeGreaterThanOrEqual(48);
+  expect(LONG_PRESS_PICTURES).toBe(false);
+  expect(AND_BAR_LIGHTS_ON).toBe("all-filled");
+  expect(AND_BAR.thickness).toBe(0.18);
+  expect(splitBar(false)).not.toContain('class="and-bar lit"');
+  expect(splitBar(true)).toContain('class="and-bar lit"');
 });

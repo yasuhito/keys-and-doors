@@ -1,4 +1,5 @@
 import { type Formula, format } from "./core";
+import { AND_BAR } from "./tuning";
 const rawIcons = import.meta.glob("./assets/icons/*.svg", {
   eager: true,
   query: "?raw",
@@ -129,15 +130,34 @@ function layout(f: Formula, b: Box, door = false): Layout {
       size: Math.min(b.w, b.h) * 0.92,
     };
   if (f.op === "∧") {
-    const { first, second, short } = split(b, (l) =>
-      door ? clamp(20, l * 0.16, 32) : clamp(6, l * 0.1, 16),
-    );
+    // Keep every AND in a row. Complex halves retain their existing recursive
+    // pictures; their platform and folding treatment remain separate design work.
+    const s = Math.min((b.w * 64) / 162.08, b.h * 0.92);
+    const gap = Math.max(AND_BAR.minGap, s * AND_BAR.gap);
+    const extent = (part: Formula) =>
+      typeof part !== "string"
+        ? s / 0.92 / 2
+        : (s * (part === "P" ? 23.77 : part === "Q" ? 17 : 22)) / 48;
+    const a = extent(f.left),
+      c = extent(f.right);
+    const total = 2 * a + gap + 2 * c;
+    const left = b.x + (b.w - total) / 2;
+    const y = b.y + b.h / 2,
+      size = s / 0.92;
+    const first = { x: left + a - size / 2, y: y - size / 2, w: size, h: size };
+    const second = { ...first, x: left + 2 * a + gap + c - size / 2 };
+    const thickness = Math.max(AND_BAR.minThickness, s * AND_BAR.thickness);
     return {
       kind: "pair",
       f,
       b,
       parts: [layout(f.left, first, door), layout(f.right, second, door)],
-      bar: band(first, second, clamp(4, short * 0.14, 10)),
+      bar: {
+        x: left + 2 * a - AND_BAR.overlap,
+        y: y - thickness / 2,
+        w: gap + 2 * AND_BAR.overlap,
+        h: thickness,
+      },
     };
   }
   const margin = clamp(2, Math.min(b.w, b.h) * 0.07, 7);
@@ -203,6 +223,25 @@ function outline(
 }
 const shift = (dy: number, body: string) =>
   dy ? `<g transform="translate(0 ${n(dy)})">${body}</g>` : body;
+function barFace(b: Box, paint: Paint, raised = false) {
+  const grooves =
+    b.h >= AND_BAR.groovesFrom
+      ? [1 / 3, 2 / 3]
+          .map((f) => `M${n(b.x + b.w * f)} ${n(b.y + 2.5)}v${n(b.h - 5)}`)
+          .join("")
+      : "";
+  return `${raised ? `<g class="joint-body">${shift(2, rect(b, b.h / 2, paint[1], paint[1]))}</g>` : ""}<g class="joint-face">${rect(b, b.h / 2, paint[0], paint[1])}<path d="${grooves}" fill="none" stroke="${paint[1]}"/></g>`;
+}
+// The split row preserves the unsplit stage-001 bar's picture size.
+export function splitBar(lit = false) {
+  const b = {
+    x: 0,
+    y: 4,
+    w: Math.max(AND_BAR.minGap, 64 * AND_BAR.gap) + 2 * AND_BAR.overlap,
+    h: Math.max(AND_BAR.minThickness, 64 * AND_BAR.thickness),
+  };
+  return `<svg class="and-bar ${lit ? "lit" : ""}" viewBox="-4 0 ${b.w + 8} 24" aria-hidden="true"><rect class="bar-halo" x="-4" y="0" width="${b.w + 8}" height="${b.h + 8}" rx="10" fill="#FFE7A8" opacity="0.6"/>${barFace(b, [lit ? "#FFE7A8" : have.bar[0], have.bar[1]], true)}</svg>`;
+}
 let masks = 0;
 // Draws an outline as cut in: a bright lip below, a dark rim above inside, then the floor.
 function recess(body: (fill: string) => string, depth: number, c: Hole) {
@@ -248,7 +287,7 @@ export function picture(
             : "")
         );
       case "pair":
-        return `<g class="pair"><g class="bridge">${rect(l.bar, Math.min(l.bar.w, l.bar.h) / 2, p.bar[0], p.bar[1])}</g>${face(l.parts[0], p, path + "L", full)}${face(l.parts[1], p, path + "R", full)}</g>`;
+        return `<g class="pair">${face(l.parts[0], p, path + "L", full)}${face(l.parts[1], p, path + "R", full)}<g class="bridge">${barFace(l.bar, p.bar)}</g></g>`;
       case "imp": {
         full ||= complete(l, path);
         // Until its hole is filled, what an if-then gives is drawn grey.
@@ -289,33 +328,8 @@ export function picture(
           const half = (child: Layout, side: string) =>
             `<g class="cut" data-path="${at + side}" data-part="${at + side}">${cut(child, at + side)}${child.kind === "pair" ? "" : seated(child, at + side, full || complete(child, at + side))}</g>`;
           if (door) {
-            const horizontal = part.b.w >= part.b.h;
-            const gap = horizontal
-              ? part.parts[1].b.x - part.parts[0].b.x - part.parts[0].b.w
-              : part.parts[1].b.y - part.parts[0].b.y - part.parts[0].b.h;
-            const width = clamp(8, gap * 0.5, 14),
-              c = centre(part.b);
-            const joint = horizontal
-              ? {
-                  x: c.x - width / 2,
-                  y: part.b.y + 8,
-                  w: width,
-                  h: Math.max(8, part.b.h - 16),
-                }
-              : {
-                  x: part.b.x + 8,
-                  y: c.y - width / 2,
-                  w: Math.max(8, part.b.w - 16),
-                  h: width,
-                };
-            const grooves = [0.25, 0.5, 0.75]
-              .map((fraction) =>
-                horizontal
-                  ? `M${n(joint.x + 2)} ${n(joint.y + joint.h * fraction)}h${n(joint.w - 4)}`
-                  : `M${n(joint.x + joint.w * fraction)} ${n(joint.y + 2)}v${n(joint.h - 4)}`,
-              )
-              .join("");
-            return `<g class="joint" data-path="${at}"><g class="joint-body">${shift(2, rect(joint, width / 2, have.bar[1], have.bar[1]))}</g><g class="joint-face">${rect(joint, width / 2, have.bar[0], have.bar[1])}<path d="${grooves}" fill="none" stroke="${have.bar[1]}"/></g></g>${half(part.parts[0], "L")}${half(part.parts[1], "R")}${locked ? `<g class="seated">${rect(part.bar, t / 2, have.bar[0], have.bar[1])}</g>` : ""}`;
+            const joint = part.bar;
+            return `${half(part.parts[0], "L")}${half(part.parts[1], "R")}<g class="joint" data-path="${at}">${barFace(joint, have.bar, true)}</g>`;
           }
           return `<g class="bridge">${recess((c) => rect(part.bar, t / 2, c, c), clamp(1, t * 0.2, 2.5), p.hole)}${locked ? `<g class="seated">${rect(part.bar, t / 2, have.bar[0], have.bar[1])}</g>` : ""}</g>${half(part.parts[0], "L")}${half(part.parts[1], "R")}`;
         }

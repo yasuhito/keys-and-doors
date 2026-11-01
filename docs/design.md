@@ -182,7 +182,7 @@ Halos exist on every hole of a door (each atom and each pair, at every depth, ou
 
 An unsplit AND door accepts **no single key**. Tapping its bar splits it into two doors in a row, **door, bar, door**: the left door has one hole for the left part (for example the sun), the right door one hole for the right part (the moon). The player then drags each key into its hole. Used keys stay in the tray. When both holes are filled, the pair is made and the room is cleared, which clears the stage if this was the stage's door.
 
-**Status.** Spec only. The runtime (`picture()`, `main.ts`, `door-motion.ts`, `style.css`) and the icons `conn-and.svg`, `door-pair.svg` and `rule-and-intro.svg` still draw PR 6's vertical joint, coupler and tabs. `decompose` and `fill` in `src/core.ts` already have the right logic: ∧I backwards leaves two independent subgoals, and `fill` requires that split. Section 14 gives the exact stage-001 behaviour and lists what the runtime has to change (14.9). The mockup `stage-001.svg` is the visual reference. The generated sheets `cards.svg`, `room.svg`, `paths.svg`, `stages.svg` and `snap.svg` still show the old pictures.
+**Status.** Implemented for stage-001 in commit `0442643`: the horizontal bar, split doors, hint wobble, formula-only long press and conditional tray slot are in the runtime (see `src/tuning.ts`). Stages 002, 003, 004 and 007 now draw the bar as described in 14.10; their own designs remain unchanged. The icons `conn-and.svg`, `door-pair.svg` and `rule-and-intro.svg` still show the old AND. `decompose` and `fill` in `src/core.ts` already have the right logic: ∧I backwards leaves two independent subgoals, and `fill` requires that split. Section 14 gives the exact stage-001 behaviour and records the implemented runtime changes (14.9). The mockup `stage-001.svg` is the visual reference. The generated sheets `cards.svg`, `room.svg`, `paths.svg`, `stages.svg` and `snap.svg` still show the old pictures.
 
 **The bar.** The sizes are provisional (`AND_BAR`, 14.1). `s` is the atom size of the two halves (64 on the stage-001 door). How `s` is chosen when a half is not an atom is not decided here.
 
@@ -449,7 +449,7 @@ Total: 1460 ms. If key B is already in the tray, the Delivered copy moves to tha
 
 ![Stage-001: tap the bar, door, bar, door, both filled](mockups/stage-001.svg)
 
-Status: spec (2.8). The runtime still plays PR 6's seam, joint shortening and tab lights. Pair-door presentation lives in `src/door-motion.ts`, separately from the proof transitions in `src/core.ts`. `fitMotion()` in `src/motion.ts` remains the if-then-key and if-intro presentation.
+Status: implemented (2.8): the runtime uses the horizontal bar and split doors, without PR 6's seam, joint shortening or tab lights. Pair-door presentation lives in `src/door-motion.ts`, separately from the proof transitions in `src/core.ts`. `fitMotion()` in `src/motion.ts` remains the if-then-key and if-intro presentation.
 
 **Split** (the player releases on the bar, 2.8):
 
@@ -587,7 +587,7 @@ The original Proof Dungeon takes a goal apart one connective at a time: each int
 
 | Goal | Rule | On the door | Simple enough now? | Status |
 | --- | --- | --- | --- | --- |
-| A ∧ B | ∧I: prove A, prove B | The brass horizontal bar between the halves (decided 11/1, replacing PR 6's vertical joint). Tap: door, bar, door, one hole each (2.8, 6.3, 14) | Yes. `decompose` in `src/core.ts` opens one room per half for ∧I; `fill` requires this decomposition | **Implemented** with the vertical joint; the bar is spec (14.9) |
+| A ∧ B | ∧I: prove A, prove B | The brass horizontal bar between the halves (decided 11/1, replacing PR 6's vertical joint). Tap: door, bar, door, one hole each (2.8, 6.3, 14) | Yes. `decompose` in `src/core.ts` opens one room per half for ∧I; `fill` requires this decomposition | **Implemented** with the horizontal bar, split doors, hint wobble, formula-only long press and conditional tray slot (14.9; `src/tuning.ts`) |
 | A → B | →I: assume A as a new key, prove B | Already in the game: tap the if-then door, borrow key A (with a ribbon), and the door becomes B (6.6). Later the pocket's arrow could become a brass hinge too, so all intro taps look alike | Already implemented, no change needed | Unchanged |
 | A ∨ B | ∨I: choose which side to prove | *Superseded on 11/1: OR is an upright brass bar between the halves, touching neither; this row's fork is no longer the plan.* A brass **fork** (Y) between the halves instead of a strip. Tap: two doors with the fork between them, both lit as choices. Tapping one door chooses it; the other dims to 35% and slides out, and undo brings it back. Then fill the chosen door | No. Needs ∨ in the core and in `picture()` (or keys too), and almost every or stage (layer 3) also needs ∨E, a case split into two rooms, on the key side. ∨I alone makes only stage 3-1 playable. Do ∨I and ∨E together | Proposal |
 | ¬A, that is A → ⊥ | ¬I: assume A, prove ⊥ | The if-then door with the cracked token (section 13) as its grey half: borrow A, the door becomes a cracked-token hole | Small once ⊥ exists, because it is →I. But it needs the ⊥ picture first, and its stages (layer 4) also need ⊥E | Proposal |
@@ -696,7 +696,7 @@ Decided (11/1): the dashed empty slot next to the tray goes away, and a joined k
 
 ### 14.9 What the runtime has to change
 
-The current runtime (after PR 6) differs from this spec as follows:
+The following changes from PR 6's runtime are implemented for stage-001 in commit `0442643`, together with the formula-only long press (see `src/tuning.ts`); the table records the previous behaviour and its implemented replacement. Stages 002, 003, 004 and 007 also now draw the horizontal bar as described in 14.10, while their own designs remain unchanged:
 
 | Now | Then |
 | --- | --- |
